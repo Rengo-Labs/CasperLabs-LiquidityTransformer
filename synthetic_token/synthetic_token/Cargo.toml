@@ -1,0 +1,21 @@
+[package]
+name = "synthetic_token"
+version = "0.2.0"
+authors = ["Muhammad Adrees <muhammad.adrees@scytalelabs.com>"]
+edition = "2018"
+
+[dependencies]
+casper-contract = "1.4.3"
+casper-types = "1.4.4"
+contract-utils = { path = "../../utils/contract-utils" }
+synthetic_token_crate = { path = "../synthetic_token_crate" }
+
+[[bin]]
+name = "synthetic_token"
+path = "bin/synthetic_token.rs"
+bench = false
+doctest = false
+test = false
+
+[features]
+default = ["casper-contract/std", "casper-types/std"]

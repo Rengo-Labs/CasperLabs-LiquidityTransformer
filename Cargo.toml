@@ -1,0 +1,21 @@
+[workspace]
+
+members = [
+  # ERC20
+  "erc20_crate",
+  # SCSPR
+  "scspr/scspr",
+  "scspr/scspr_crate",
+  "scspr/scspr_tests",
+  "scspr/test_contract",
+  # LIQUIDITY TRANSFORMER
+  "liquidity_transformer/liquidity_transformer",
+  "liquidity_transformer/liquidity_transformer_crate",
+  "liquidity_transformer/liquidity_transformer_tests",
+  "liquidity_transformer/test_contract",
+  # SYNTHETIC HELPER
+  "synthetic_helper_crate",
+  #SYNTHETIC TOKEN
+  "synthetic_token/synthetic_token",
+  "synthetic_token/synthetic_token_crate"
+]

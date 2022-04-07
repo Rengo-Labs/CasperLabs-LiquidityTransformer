@@ -1,0 +1,21 @@
+[package]
+name = "liquidity_transformer"
+version = "0.2.0"
+authors = ["Muhammad Adrees <muhammad.adrees@scytalelabs.com>"]
+edition = "2018"
+
+[dependencies]
+casper-contract = "1.4.3"
+casper-types = "1.4.4"
+contract-utils = { path = "../../utils/contract-utils" }
+liquidity_transformer_crate = { path = "../liquidity_transformer_crate" }
+
+[[bin]]
+name = "liquidity_transformer"
+path = "bin/liquidity_transformer.rs"
+bench = false
+doctest = false
+test = false
+
+[features]
+default = ["casper-contract/std", "casper-types/std"]

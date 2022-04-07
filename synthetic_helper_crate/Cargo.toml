@@ -1,0 +1,10 @@
+[package]
+name = "synthetic_helper_crate"
+version = "0.2.0"
+authors = ["Muhammad Adrees <muhammad.adrees@scytalelabs.com>"]
+edition = "2018"
+
+[dependencies]
+casper-contract = "1.4.3"
+casper-types = "1.4.4"
+contract-utils = { path = "../utils/contract-utils" }
