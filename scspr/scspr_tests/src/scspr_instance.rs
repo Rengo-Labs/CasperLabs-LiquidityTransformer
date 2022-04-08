@@ -64,6 +64,7 @@ impl SCSPRInstance {
                 "synthetic_helper" => synthetic_helper,
                 "synthetic_token" => synthetic_token,
             },
+            0,
         );
     }
 
@@ -80,6 +81,7 @@ impl SCSPRInstance {
                 "msg_value" => msg_value,
                 "succesor_purse" => succesor_purse
             },
+            0,
         );
     }
 
@@ -91,6 +93,7 @@ impl SCSPRInstance {
                 "msg_value" => msg_value,
                 "succesor_purse" => succesor_purse
             },
+            0,
         );
     }
 
@@ -101,6 +104,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "transfer_helper" => transfer_helper
             },
+            0,
         );
     }
 
@@ -111,6 +115,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "wise_token" => wise_token
             },
+            0,
         );
     }
 
@@ -121,6 +126,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "pair" => pair
             },
+            0,
         );
     }
 
@@ -131,6 +137,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "pair" => pair
             },
+            0,
         );
     }
 
@@ -141,6 +148,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "new_master" => new_master
             },
+            0,
         );
     }
 
@@ -151,6 +159,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "wise" => wise
             },
+            0,
         );
     }
 
@@ -161,6 +170,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "contract" => contract
             },
+            0,
         );
     }
 
@@ -180,6 +190,7 @@ impl SCSPRInstance {
                 "investment_mode" => investment_mode,
                 "msg_value" => msg_value,
             },
+            0,
         );
     }
 

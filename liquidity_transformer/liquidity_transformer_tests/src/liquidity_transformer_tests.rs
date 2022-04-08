@@ -337,6 +337,7 @@ fn add_liquidity(
         runtime_args! {
             "liquidity_transformer" => Key::Hash(proxy.contract_hash())
         },
+        0,
     );
     let purse: URef = proxy.query_named_key("result".to_string());
 
@@ -348,6 +349,7 @@ fn add_liquidity(
         runtime_args! {
             "white_list" => Key::Account(owner)
         },
+        0,
     );
 
     uniswap_factory.call_contract(
@@ -358,6 +360,7 @@ fn add_liquidity(
             "token_b" => wcspr_key,
             "pair_hash" => Key::Hash(uniswap_pair.contract_hash())
         },
+        0,
     );
 
     let router_package_hash: ContractPackageHash =
@@ -366,6 +369,7 @@ fn add_liquidity(
         owner,
         "set_white_list",
         runtime_args! {"white_list" => Key::from(router_package_hash)},
+        0,
     );
 
     erc20.call_contract(
@@ -375,6 +379,7 @@ fn add_liquidity(
             "to" => package,
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     erc20.call_contract(
@@ -384,6 +389,7 @@ fn add_liquidity(
             "to" => package_liquidity,
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     erc20.call_contract(
@@ -393,6 +399,7 @@ fn add_liquidity(
             "to" => Key::Account(owner),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     wcspr.call_contract(
@@ -402,6 +409,7 @@ fn add_liquidity(
             "purse" => purse,
             "amount" => U512::from(100_000_000_000_000 as u128)
         },
+        0,
     );
 
     erc20.call_contract(
@@ -411,6 +419,7 @@ fn add_liquidity(
             "spender" => Key::from(router_package_hash),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     wcspr.call_contract(
@@ -420,6 +429,7 @@ fn add_liquidity(
             "spender" => Key::from(router_package_hash),
             "amount" => U512::from(498_500_000_000_000 as u128)
         },
+        0,
     );
 
     let deadline: u128 = match SystemTime::now().duration_since(UNIX_EPOCH) {
@@ -443,6 +453,7 @@ fn add_liquidity(
             "to" => Key::from(uniswap_pair_package),
             "pair" => Some(Key::Hash(uniswap_pair.contract_hash())),
         },
+        0,
     );
 }
 
@@ -480,6 +491,7 @@ fn forward_liquidity(
             "to" => Key::from(uniswap_pair_package),
             "amount" => U256::from(MINTED)
         },
+        0,
     );
 
     let uniswap_router_package: ContractPackageHash =
@@ -490,6 +502,7 @@ fn forward_liquidity(
         runtime_args! {
             "white_list" => Key::from(uniswap_router_package)
         },
+        0,
     );
 
     // synthetic_helper.call_contract(
@@ -510,6 +523,7 @@ fn forward_liquidity(
             "immutable_transformer" => liquidity_package,
             "transformer_purse" => purse
         },
+        0,
     );
 
     scspr.call_contract(
@@ -518,6 +532,7 @@ fn forward_liquidity(
         runtime_args! {
             "wise" => Key::Hash(wise.contract_hash())
         },
+        0,
     );
 
     let scspr_package: ContractPackageHash = scspr.query_named_key("self_package_hash".to_string());
@@ -528,6 +543,7 @@ fn forward_liquidity(
             "amount" => U256::from(MINTED),
             "to" => Key::from(scspr_package)
         },
+        0,
     );
 
     let uniswap_router_package: ContractPackageHash =
@@ -539,6 +555,7 @@ fn forward_liquidity(
             "amount" => U256::from(MINTED),
             "spender" => Key::from(uniswap_router_package)
         },
+        0,
     );
 
     const AMOUNT: u128 = 100_000_000_000_000_000;
@@ -550,6 +567,7 @@ fn forward_liquidity(
             "recipient" => Key::from(scspr_package),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     scspr.call_contract(
@@ -559,6 +577,7 @@ fn forward_liquidity(
             "recipient" => Key::Hash(scspr.contract_hash()),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     wcspr.call_contract(
@@ -568,6 +587,7 @@ fn forward_liquidity(
             "purse" => purse,
             "amount" => U512::from(MINTED)
         },
+        0,
     );
 
     wise.call_contract(
@@ -577,6 +597,7 @@ fn forward_liquidity(
             "to" => liquidity_package,
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     let liquidity: Key = Key::Hash(liquidity_contract.contract_hash());
@@ -587,7 +608,7 @@ fn forward_liquidity(
     const _DAYS: u64 = 15;
     const _TIME: u64 = _DAYS * 86400 * 1000;
 
-    proxy_instance.reserve_wise(owner, liquidity, investment_mode, msg_value);
+    proxy_instance.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
 
     let liquidity_transformer = LIQUIDITYTRANSFORMERInstance::instance(liquidity_contract);
 
@@ -599,7 +620,7 @@ fn test_deploy() {
     let (_, _, _, _, _, _, _, _, _, _, _) = deploy();
 }
 
-// #[test]
+#[test]
 fn test_current_wise_day() {
     let (_, _, owner, proxy, _, _, _, _, _, _, _) = deploy();
 
@@ -608,7 +629,7 @@ fn test_current_wise_day() {
     const DAYS: u64 = 33;
     const TIME: u64 = DAYS * 86400 * 1000;
 
-    proxy.current_wise_day(owner);
+    proxy.current_stakeable_day(owner, TIME);
 
     let ret: u64 = proxy.result();
     assert_eq!(ret, DAYS);
@@ -626,6 +647,7 @@ fn test_set_settings() {
             "uniswap_pair" => Key::Hash(pair.contract_hash()),
             "synthetic_cspr" => Key::Hash(scspr.contract_hash())
         },
+        0,
     );
 
     let setted_wise_contract: Key = liquidity_contract.query_named_key("wise_contract".to_string());
@@ -648,13 +670,13 @@ fn test_renounce_keeper() {
     .unwrap();
     assert_ne!(res, zero);
 
-    liquidity_contract.call_contract(owner, "renounce_keeper", runtime_args! {});
+    liquidity_contract.call_contract(owner, "renounce_keeper", runtime_args! {}, 0);
 
     let res: Key = liquidity_contract.query_named_key("settings_keeper".to_string());
     assert_eq!(res, zero);
 }
 
-// #[test]
+#[test]
 fn test_reserve_wise() {
     let (_, liquidity_contract, owner, proxy, _, _, _, _, _, _, _) = deploy();
 
@@ -667,7 +689,7 @@ fn test_reserve_wise() {
     const DAYS: u64 = 15;
     const TIME: u64 = DAYS * 86400 * 1000;
 
-    proxy.reserve_wise(owner, liquidity, investment_mode, msg_value);
+    proxy.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
 }
 
 // #[test]
@@ -712,6 +734,7 @@ fn test_reserve_wise_with_token() {
         Key::Hash(erc20.contract_hash()),
         U256::from(AMOUNT),
         investment_mode,
+        TIME,
     );
 }
 
@@ -847,7 +870,7 @@ fn test_request_refund() {
     const _DAYS: u64 = 15;
     const _TIME: u64 = _DAYS * 86400 * 1000;
 
-    proxy.reserve_wise(owner, liquidity, investment_mode, msg_value);
+    proxy.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
 
     // TIME PASSED, NOW CAN REFUND
 

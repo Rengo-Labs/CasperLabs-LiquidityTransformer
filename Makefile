@@ -103,4 +103,5 @@ test:
 	cargo test -p liquidity_transformer_tests && cargo test -p scspr_tests
 
 full-test:
-	make all && cargo test -p liquidity_transformer_tests && cargo test -p scspr_tests
+	make all && cargo test -p liquidity_transformer_tests
+    # && cargo test -p scspr_tests

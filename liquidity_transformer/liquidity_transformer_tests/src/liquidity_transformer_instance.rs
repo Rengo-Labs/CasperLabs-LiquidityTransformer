@@ -60,6 +60,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         liquidity_transformer: Key,
         investment_mode: u8,
         msg_value: U256,
+        block_time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -69,6 +70,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "investment_mode" => investment_mode,
                 "msg_value" => msg_value,
             },
+            block_time,
         );
     }
 
@@ -79,6 +81,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         token_address: Key,
         token_amount: U256,
         investment_mode: u8,
+        block_time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -89,6 +92,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "token_amount" => token_amount,
                 "investment_mode" => investment_mode
             },
+            0,
         );
     }
 
@@ -99,12 +103,13 @@ impl LIQUIDITYTRANSFORMERInstance {
             runtime_args! {
                 "purse" => purse
             },
+            0,
         );
     }
 
     pub fn get_my_tokens(&self, sender: AccountHash) {
         self.0
-            .call_contract(sender, "get_my_tokens", runtime_args! {});
+            .call_contract(sender, "get_my_tokens", runtime_args! {}, 0);
     }
 
     pub fn payout_investor_address(&self, sender: AccountHash, investor_address: Key) {
@@ -114,6 +119,7 @@ impl LIQUIDITYTRANSFORMERInstance {
             runtime_args! {
                 "investor_address" => investor_address
             },
+            0,
         );
     }
 
@@ -124,12 +130,17 @@ impl LIQUIDITYTRANSFORMERInstance {
             runtime_args! {
                 "token_address" => token_address,
             },
+            0,
         );
     }
 
-    pub fn current_wise_day(&self, sender: AccountHash) {
-        self.0
-            .call_contract(sender, "current_wise_day", runtime_args! {});
+    pub fn current_stakeable_day(&self, sender: AccountHash, block_time: u64) {
+        self.0.call_contract(
+            sender,
+            "current_stakeable_day",
+            runtime_args! {},
+            block_time,
+        );
     }
 
     pub fn request_refund(&self, sender: AccountHash, liquidity_transformer: Key, proxy_key: Key) {
@@ -140,6 +151,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "liquidity_transformer" => liquidity_transformer,
                 "proxy_key" => proxy_key
             },
+            0,
         );
     }
 
@@ -152,6 +164,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "spender" => spender,
                 "amount" => amount
             },
+            0,
         );
     }
 
@@ -162,6 +175,7 @@ impl LIQUIDITYTRANSFORMERInstance {
             runtime_args! {
                 "liquidity_transformer" => liquidity_transformer
             },
+            0,
         );
     }
 

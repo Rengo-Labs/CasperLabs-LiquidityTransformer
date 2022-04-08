@@ -146,8 +146,8 @@ fn prepare_path() {
 }
 
 #[no_mangle]
-fn current_wise_day() {
-    let ret: u64 = LiquidityTransformer::default().current_wise_day();
+fn current_stakeable_day() {
+    let ret: u64 = LiquidityTransformer::default().current_stakeable_day();
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
@@ -248,7 +248,7 @@ fn get_entry_points() -> EntryPoints {
         EntryPointType::Contract,
     ));
     entry_points.add_entry_point(EntryPoint::new(
-        "current_wise_day",
+        "current_stakeable_day",
         vec![],
         u64::cl_type(),
         EntryPointAccess::Public,

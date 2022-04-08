@@ -338,6 +338,7 @@ fn forward_liquidity(
             "token1" => Key::Hash(erc20.contract_hash()),
             "factory_hash" => Key::Hash(uniswap_factory.contract_hash()),
         },
+        0,
     );
     // EXT
 
@@ -363,6 +364,7 @@ fn forward_liquidity(
             "to" => Key::from(uniswap_pair_package),
             "amount" => U256::from(MINTED)
         },
+        0,
     );
 
     let uniswap_router_package: ContractPackageHash =
@@ -373,6 +375,7 @@ fn forward_liquidity(
         runtime_args! {
             "white_list" => Key::from(uniswap_router_package)
         },
+        0,
     );
 
     // synthetic_helper.call_contract(
@@ -393,6 +396,7 @@ fn forward_liquidity(
             "immutable_transformer" => liquidity_package,
             "transformer_purse" => purse
         },
+        0,
     );
 
     scspr.call_contract(
@@ -401,6 +405,7 @@ fn forward_liquidity(
         runtime_args! {
             "wise" => Key::Hash(wise.contract_hash())
         },
+        0,
     );
 
     let scspr_package: ContractPackageHash = scspr.query_named_key("self_package_hash".to_string());
@@ -411,6 +416,7 @@ fn forward_liquidity(
             "amount" => U256::from(MINTED),
             "to" => Key::from(scspr_package)
         },
+        0,
     );
 
     let uniswap_router_package: ContractPackageHash =
@@ -422,6 +428,7 @@ fn forward_liquidity(
             "amount" => U256::from(MINTED),
             "spender" => Key::from(uniswap_router_package)
         },
+        0,
     );
 
     const AMOUNT: u128 = 100_000_000_000_000_000;
@@ -433,6 +440,7 @@ fn forward_liquidity(
             "recipient" => Key::from(scspr_package),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     scspr.call_contract(
@@ -442,6 +450,7 @@ fn forward_liquidity(
             "recipient" => Key::Hash(scspr.contract_hash()),
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     wcspr.call_contract(
@@ -451,6 +460,7 @@ fn forward_liquidity(
             "purse" => purse,
             "amount" => U512::from(MINTED)
         },
+        0,
     );
 
     wise.call_contract(
@@ -460,6 +470,7 @@ fn forward_liquidity(
             "to" => liquidity_package,
             "amount" => U256::from(AMOUNT)
         },
+        0,
     );
 
     let liquidity: Key = Key::Hash(liquidity_contract.contract_hash());
@@ -478,6 +489,7 @@ fn forward_liquidity(
         runtime_args! {
             "purse" => purse
         },
+        0,
     );
 }
 
@@ -542,6 +554,7 @@ fn test_scspr_deposit() {
             "to" => Key::from(uniswap_pair_package),
             "amount" => U256::from(10000000000000000000 as u128)
         },
+        0,
     );
 
     // MINTING TO A CONTRACT WITH WCSPR
@@ -552,6 +565,7 @@ fn test_scspr_deposit() {
             "purse" => purse,
             "amount" => U512::from(1000000000)
         },
+        0,
     );
     wcspr.call_contract(
         owner,
@@ -560,6 +574,7 @@ fn test_scspr_deposit() {
             "spender" => Key::Hash(proxy.query_named_key("package_hash".to_string())),
             "amount" => U256::from(1000000000)
         },
+        0,
     );
     proxy.call_contract(
         owner,
@@ -570,6 +585,7 @@ fn test_scspr_deposit() {
             "recipient" => Key::Hash(uniswap_pair.query_named_key("self_package_hash".to_string())),
             "amount" => U256::from(1000000000),
         },
+        0,
     );
     // MINTING TO A CONTRACT WITH WCSPR
 

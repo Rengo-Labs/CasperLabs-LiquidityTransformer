@@ -5,7 +5,7 @@ use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, CLTyped, Key, PublicKey, RuntimeArgs, SecretKey,
 };
 
-use crate::utils::{deploy, fund_account, query, query_dictionary_item, DeploySource};
+use crate::utils::{deploy, deploy_test, fund_account, query, query_dictionary_item, DeploySource};
 
 #[derive(Clone)]
 pub struct TestEnv {
@@ -19,14 +19,36 @@ impl TestEnv {
         }
     }
 
-    pub fn run(&self, sender: AccountHash, session_code: DeploySource, session_args: RuntimeArgs) {
+    pub fn run(
+        &self,
+        sender: AccountHash,
+        session_code: DeploySource,
+        session_args: RuntimeArgs,
+        block_time: u64,
+    ) {
         deploy(
             &mut self.state.lock().unwrap().builder,
             &sender,
             &session_code,
             session_args,
             true,
-            None,
+            Some(block_time),
+        )
+    }
+
+    pub fn run_test(
+        &self,
+        sender: AccountHash,
+        session_code: DeploySource,
+        session_args: RuntimeArgs,
+    ) {
+        deploy_test(
+            &mut self.state.lock().unwrap().builder,
+            &sender,
+            &session_code,
+            session_args,
+            true,
+            Some(432000000), //5*Timing::SECONDS_IN_DAY*1000
         )
     }
 

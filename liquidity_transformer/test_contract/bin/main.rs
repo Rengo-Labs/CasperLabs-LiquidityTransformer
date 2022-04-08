@@ -183,13 +183,13 @@ fn prepare_path() {
 }
 
 #[no_mangle]
-fn current_wise_day() {
+fn current_stakeable_day() {
     let liquidity_transformer_address: ContractHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
     let ret: u64 = runtime::call_contract(
         liquidity_transformer_address,
-        "current_wise_day",
+        "current_stakeable_day",
         runtime_args! {},
     );
 
@@ -438,7 +438,7 @@ fn get_entry_points() -> EntryPoints {
         EntryPointType::Contract,
     ));
     entry_points.add_entry_point(EntryPoint::new(
-        "current_wise_day",
+        "current_stakeable_day",
         vec![],
         <()>::cl_type(),
         EntryPointAccess::Public,

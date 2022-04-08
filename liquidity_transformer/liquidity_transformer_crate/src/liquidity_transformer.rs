@@ -41,7 +41,7 @@ pub enum LiquidityTransformerEvent {
         sender_address: Key,
         investment_amount: U256,
         token_amount: U256,
-        current_wise_day: u64,
+        current_stakeable_day: u64,
         investment_mode: u8,
     },
     UniswapSwapResult {
@@ -67,7 +67,7 @@ impl LiquidityTransformerEvent {
                 sender_address: _,
                 investment_amount: _,
                 token_amount: _,
-                current_wise_day: _,
+                current_stakeable_day: _,
                 investment_mode: _,
             } => "wiseReservation",
             LiquidityTransformerEvent::UniswapSwapResult {
@@ -125,7 +125,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     // --- MODIFIERS --- //
 
     fn after_investment_days(&self) {
-        if self.current_wise_day() <= data::INVESTMENT_DAYS as u64 {
+        if self.current_stakeable_day() <= data::INVESTMENT_DAYS as u64 {
             runtime::revert(ApiError::from(Error::OngoingInvestmentPhase));
         }
     }
@@ -145,7 +145,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn below_maximum_day(&self) {
-        if self.current_wise_day() <= 0 || self.current_wise_day() > data::INVESTMENT_DAYS as u64 {
+        if self.current_stakeable_day() <= 0
+            || self.current_stakeable_day() > data::INVESTMENT_DAYS as u64
+        {
             runtime::revert(ApiError::from(Error::ReserveWrongInvestmentDay));
         }
     }
@@ -339,7 +341,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             sender_address,
             investment_amount: sender_value,
             token_amount: sender_tokens,
-            current_wise_day: self.current_wise_day(),
+            current_stakeable_day: self.current_stakeable_day(),
             investment_mode,
         });
     }
@@ -502,14 +504,14 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         path
     }
 
-    fn current_wise_day(&self) -> u64 {
+    fn current_stakeable_day(&self) -> u64 {
         let args: RuntimeArgs = runtime_args! {};
-        let current_wise_day: u64 = runtime::call_contract(
+        let current_stakeable_day: u64 = runtime::call_contract(
             data::wise().into_hash().unwrap_or_revert().into(),
-            "current_wise_day",
+            "current_stakeable_day",
             args,
         );
-        current_wise_day
+        current_stakeable_day
     }
 
     fn request_refund(&mut self, caller_purse: URef) -> (U256, U256) {
@@ -521,7 +523,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         if ret != false
             || InvestorBalance::instance().get(&caller_address_hash) <= U256::from(0)
             || PurchasedTokens::instance().get(&caller_address_hash) <= U256::from(0)
-            || self.current_wise_day() <= (data::INVESTMENT_DAYS + 10) as u64
+            || self.current_stakeable_day() <= (data::INVESTMENT_DAYS + 10) as u64
         {
             runtime::revert(ApiError::from(Error::RefundNotPossible));
         }
@@ -564,7 +566,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                 sender_address,
                 investment_amount,
                 token_amount,
-                current_wise_day,
+                current_stakeable_day,
                 investment_mode,
             } => {
                 let mut event = BTreeMap::new();
@@ -573,7 +575,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                 event.insert("sender_address", sender_address.to_string());
                 event.insert("investment_amount", investment_amount.to_string());
                 event.insert("token_amount", token_amount.to_string());
-                event.insert("current_wise_day", current_wise_day.to_string());
+                event.insert("current_stakeable_day", current_stakeable_day.to_string());
                 event.insert("investment_mode", investment_mode.to_string());
                 events.push(event);
             }
