@@ -28,6 +28,7 @@ fn deploy_liquidity_transformer(
             "wcspr" => Key::Hash(wcspr.contract_hash()),
             "uniswap_router_package" => uniswap_router_package
         },
+        0,
     )
 }
 
@@ -45,6 +46,7 @@ fn deploy_erc20(env: &TestEnv, owner: AccountHash) -> TestContract {
             "symbol" => "ERC",
             "decimals" => decimals
         },
+        0,
     )
 }
 
@@ -57,6 +59,7 @@ fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
         runtime_args! {
             "fee_to_setter" => Key::from(owner)
         },
+        0,
     )
 }
 
@@ -72,6 +75,7 @@ fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
             "symbol" => "WCSPR",
             "decimals" => decimals
         },
+        0,
     )
 }
 
@@ -91,6 +95,7 @@ fn deploy_flash_swapper(
             "dai" => Key::Hash(wcspr.contract_hash()),
             "uniswap_v2_factory" => Key::Hash(uniswap_factory.contract_hash())
         },
+        0,
     )
 }
 
@@ -115,6 +120,7 @@ fn deploy_uniswap_pair(
             "callee_package_hash" => flash_swapper_package_hash,
             "factory_hash" => Key::Hash(uniswap_factory.contract_hash()),
         },
+        0,
     )
 }
 
@@ -125,6 +131,7 @@ fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
         "library",
         owner,
         runtime_args! {},
+        0,
     )
 }
 
@@ -145,6 +152,7 @@ fn deploy_uniswap_router(
             "wcspr" => Key::Hash(wcspr.contract_hash()),
             "library" => Key::Hash(uniswap_library.contract_hash())
         },
+        0,
     )
 }
 
@@ -169,6 +177,7 @@ fn deploy_synthetic_token(
             "erc20" => erc20,
             "uniswap_router_package" => uniswap_router_package
         },
+        0,
     )
 }
 
@@ -181,6 +190,7 @@ fn deploy_transfer_helper(env: &TestEnv, owner: AccountHash, scspr: &TestContrac
         runtime_args! {
             "transfer_invoker" => Key::Hash(scspr.contract_hash()),
         },
+        0,
     )
 }
 
@@ -191,6 +201,7 @@ fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
         "liquidity_guard",
         owner,
         runtime_args! {},
+        0,
     )
 }
 
@@ -220,6 +231,7 @@ fn deploy_wise_token(
             "erc20" => Key::Hash(erc20.contract_hash()),
             "launch_time" => U256::from(0),
         },
+        0,
     )
 }
 

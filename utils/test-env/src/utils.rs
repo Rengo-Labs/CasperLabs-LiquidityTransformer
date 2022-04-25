@@ -100,52 +100,6 @@ pub fn deploy(
     .commit();
 }
 
-pub fn deploy_test(
-    builder: &mut InMemoryWasmTestBuilder,
-    deployer: &AccountHash,
-    source: &DeploySource,
-    args: RuntimeArgs,
-    success: bool,
-    block_time: Option<u64>,
-) {
-    let mut rng = rand::thread_rng();
-    // let deploy_hash = rng.gen();
-    let mut deploy_builder = DeployItemBuilder::new()
-        .with_empty_payment_bytes(runtime_args! {ARG_AMOUNT => *DEFAULT_PAYMENT})
-        .with_address(*deployer)
-        .with_authorization_keys(&[*deployer])
-        .with_deploy_hash(rng.gen());
-
-    deploy_builder = match source {
-        DeploySource::Code(path) => deploy_builder.with_session_code(path, args),
-        DeploySource::ByContractHash { hash, method } => {
-            deploy_builder.with_stored_session_hash(*hash, method, args)
-        }
-        DeploySource::ByPackageHash {
-            package_hash,
-            method,
-        } => deploy_builder.with_stored_versioned_contract_by_hash(
-            package_hash.value(),
-            None,
-            method,
-            args,
-        ),
-    };
-
-    let mut execute_request_builder =
-        ExecuteRequestBuilder::from_deploy_item(deploy_builder.build());
-    if let Some(ustamp) = block_time {
-        execute_request_builder = execute_request_builder.with_block_time(ustamp)
-    }
-    let exec = builder.exec(execute_request_builder.build());
-    if success {
-        exec.expect_success()
-    } else {
-        exec.expect_failure()
-    }
-    .commit();
-}
-
 pub fn query_dictionary_item(
     builder: &InMemoryWasmTestBuilder,
     key: Key,

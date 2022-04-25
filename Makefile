@@ -45,6 +45,7 @@ all:
 
 clean-all:
     # Cleaning contracts
+	make clean
 	cd ${erc20_contract} && make clean
 	cd ${factory_contract} && make clean
 	cd ${flash_swapper_contract} && make clean
@@ -84,7 +85,6 @@ copy-wasm-file:
 	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 
-
 build-contract:
     # Building transformer contracts
 	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p proxy_liquidity_transformer -p proxy_scspr --target wasm32-unknown-unknown
@@ -92,15 +92,16 @@ build-contract:
 clean:
 	cargo clean
 	rm -rf liquidity_transformer_tests/wasm/*.wasm
+	rm -rf scspr_tests/wasm/*.wasm
+	rm -rf Cargo.lock
 
 test-liquidity-transformer:
 	cargo test -p liquidity_transformer_tests
-
 test-scspr:
 	cargo test -p scspr_tests
 
 test:
-	cargo test -p liquidity_transformer_tests && cargo test -p scspr_tests
+	make test-liquidity-transformer && make test-scspr
 
 full-test:
-	make all && cargo test -p liquidity_transformer_tests && cargo test -p scspr_tests
+	make all && make test

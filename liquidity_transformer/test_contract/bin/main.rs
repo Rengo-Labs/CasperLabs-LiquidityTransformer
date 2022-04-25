@@ -9,7 +9,6 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    account::AccountHash,
     contracts::{ContractHash, ContractPackageHash},
     runtime_args, CLType, CLTyped, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints,
     Group, Key, Parameter, RuntimeArgs, URef, U256, U512,
@@ -27,21 +26,22 @@ fn constructor() {
     mappings::set_key(&mappings::self_package_key(), package_hash);
     mappings::set_key(
         &mappings::liquidity_transformer_key(),
-        ContractHash::from(liquidity_transformer.into_hash().unwrap_or_default()),
+        ContractPackageHash::from(liquidity_transformer.into_hash().unwrap_or_default()),
     );
 }
 
 #[no_mangle]
 fn set_settings() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
     let wise_token: Key = runtime::get_named_arg("wise_token");
     let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
     let synthetic_cspr: Key = runtime::get_named_arg("synthetic_cspr");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "set_settings",
         runtime_args! {
             "wise_token" => wise_token,
@@ -53,11 +53,12 @@ fn set_settings() {
 
 #[no_mangle]
 fn renounce_keeper() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "renounce_keeper",
         runtime_args! {},
     );
@@ -70,8 +71,9 @@ fn reserve_wise() {
     let msg_value: U256 = runtime::get_named_arg("msg_value");
     let caller_purse: URef = account::get_main_purse();
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer.into_hash().unwrap_or_revert().into(),
+        None,
         "reserve_wise",
         runtime_args! {
             "investment_mode" => investment_mode,
@@ -89,8 +91,9 @@ fn reserve_wise_with_token() {
     let investment_mode: u8 = runtime::get_named_arg("investment_mode");
     let caller_purse: URef = account::get_main_purse();
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         proxy.into_hash().unwrap_or_revert().into(),
+        None,
         "_reserve_wise_with_token",
         runtime_args! {
             "token_address" => token_address,
@@ -103,15 +106,16 @@ fn reserve_wise_with_token() {
 
 #[no_mangle]
 fn _reserve_wise_with_token() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
     let token_address: Key = runtime::get_named_arg("token_address");
     let token_amount: U256 = runtime::get_named_arg("token_amount");
     let investment_mode: u8 = runtime::get_named_arg("investment_mode");
     let caller_purse: URef = runtime::get_named_arg("caller_purse");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "reserve_wise_with_token",
         runtime_args! {
             "token_address" => token_address,
@@ -124,11 +128,12 @@ fn _reserve_wise_with_token() {
 
 #[no_mangle]
 fn forward_liquidity() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "forward_liquidity",
         runtime_args! {},
     );
@@ -136,11 +141,12 @@ fn forward_liquidity() {
 
 #[no_mangle]
 fn get_my_tokens() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "get_my_tokens",
         runtime_args! {},
     );
@@ -148,13 +154,14 @@ fn get_my_tokens() {
 
 #[no_mangle]
 fn payout_investor_address() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
     let investor_address: Key = runtime::get_named_arg("investor_address");
 
-    let ret: U256 = runtime::call_contract(
+    let ret: U256 = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "payout_investor_address",
         runtime_args! {
             "investor_address" => investor_address
@@ -166,13 +173,14 @@ fn payout_investor_address() {
 
 #[no_mangle]
 fn prepare_path() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
     let token_address: Key = runtime::get_named_arg("token_address");
 
-    let ret: Vec<Key> = runtime::call_contract(
+    let ret: Vec<Key> = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "prepare_path",
         runtime_args! {
             "token_address" => token_address
@@ -184,11 +192,12 @@ fn prepare_path() {
 
 #[no_mangle]
 fn current_stakeable_day() {
-    let liquidity_transformer_address: ContractHash =
+    let liquidity_transformer_address: ContractPackageHash =
         mappings::get_key(&mappings::liquidity_transformer_key());
 
-    let ret: u64 = runtime::call_contract(
+    let ret: u64 = runtime::call_versioned_contract(
         liquidity_transformer_address,
+        None,
         "current_stakeable_day",
         runtime_args! {},
     );
@@ -202,16 +211,18 @@ fn request_refund() {
     let proxy_key: Key = runtime::get_named_arg("proxy_key");
     let caller_purse: URef = account::get_main_purse();
 
-    let ret: (U256, U256) = runtime::call_contract(
+    let ret: (U256, U256) = runtime::call_versioned_contract(
         liquidity_transformer.into_hash().unwrap_or_revert().into(),
+        None,
         "request_refund",
         runtime_args! {
             "caller_purse" => caller_purse
         },
     );
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         proxy_key.into_hash().unwrap_or_revert().into(),
+        None,
         "_request_refund",
         runtime_args! {
             "ret" => ret
@@ -231,8 +242,9 @@ fn approve() {
     let spender: Key = runtime::get_named_arg("spender");
     let amount: U256 = runtime::get_named_arg("amount");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         token_address.into_hash().unwrap_or_revert().into(),
+        None,
         "approve",
         runtime_args! {
             "spender" => spender,
@@ -245,8 +257,9 @@ fn approve() {
 fn temp_purse() {
     let liquidity_transformer: Key = runtime::get_named_arg("liquidity_transformer");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer.into_hash().unwrap_or_revert().into(),
+        None,
         "_temp_purse",
         runtime_args! {
             "purse" => account::get_main_purse()
@@ -266,8 +279,9 @@ fn deposit() {
     let token: Key = runtime::get_named_arg("token");
     let amount: U512 = runtime::get_named_arg("amount");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         proxy.into_hash().unwrap_or_revert().into(),
+        None,
         "_deposit",
         runtime_args! {
             "token" => token,
@@ -283,8 +297,9 @@ fn _deposit() {
     let purse: URef = runtime::get_named_arg("purse");
     let amount: U512 = runtime::get_named_arg("amount");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         token.into_hash().unwrap_or_revert().into(),
+        None,
         "deposit_no_return",
         runtime_args! {
             "purse" => purse,
@@ -297,8 +312,9 @@ fn _deposit() {
 fn pair_total_supply() {
     let pair: Key = runtime::get_named_arg("pair");
 
-    let ret: U256 = runtime::call_contract(
+    let ret: U256 = runtime::call_versioned_contract(
         pair.into_hash().unwrap_or_revert().into(),
+        None,
         "total_supply",
         runtime_args! {},
     );
@@ -332,8 +348,9 @@ fn transfer_from() {
     let recipient: Key = runtime::get_named_arg("recipient");
     let amount: U256 = runtime::get_named_arg("amount");
 
-    let _: Result<(), u32> = runtime::call_contract(
+    let _: Result<(), u32> = runtime::call_versioned_contract(
         wcspr.into_hash().unwrap_or_revert().into(),
+        None,
         "transfer_from",
         runtime_args! {
             "owner" => owner,
@@ -349,7 +366,7 @@ fn get_entry_points() -> EntryPoints {
         "constructor",
         vec![
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
-            Parameter::new("contract_hash", ContractHash::cl_type()),
+            Parameter::new("contract_hash", ContractPackageHash::cl_type()),
             Parameter::new("liquidity_transformer", Key::cl_type()),
         ],
         <()>::cl_type(),

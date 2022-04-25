@@ -21,6 +21,67 @@ use crate::liquidity_transformer_instance::LIQUIDITYTRANSFORMERInstance;
 // If needed 15 days => 15 * 86400 * 1000 (Time required in 'ms')
 //
 
+pub fn deploy_deposit_purse_proxy(
+    env: &TestEnv,
+    sender: AccountHash,
+    destination_package_hash: Key,
+    destination_entrypoint: &str,
+    amount: U512,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "purse-proxy.wasm",
+        "purse-proxy",
+        sender,
+        runtime_args! {
+            "destination_package_hash" => destination_package_hash,
+            "destination_entrypoint" => destination_entrypoint,
+            "amount" => amount,
+        },
+        0,
+    )
+}
+
+pub fn deploy_set_liquidity_transfomer_purse_proxy(
+    env: &TestEnv,
+    sender: AccountHash,
+    destination_package_hash: Key,
+    destination_entrypoint: &str,
+    immutable_transformer: Key,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "purse-proxy.wasm",
+        "purse-proxy",
+        sender,
+        runtime_args! {
+            "destination_package_hash" => destination_package_hash,
+            "destination_entrypoint" => destination_entrypoint,
+            "immutable_transformer" => immutable_transformer,
+        },
+        0,
+    )
+}
+
+pub fn deploy_forward_liquidity_purse_proxy(
+    env: &TestEnv,
+    sender: AccountHash,
+    destination_package_hash: Key,
+    destination_entrypoint: &str,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "purse-proxy.wasm",
+        "purse-proxy",
+        sender,
+        runtime_args! {
+            "destination_package_hash" => destination_package_hash,
+            "destination_entrypoint" => destination_entrypoint,
+        },
+        0,
+    )
+}
+
 fn deploy_uniswap_router(
     env: &TestEnv,
     owner: AccountHash,
@@ -34,10 +95,11 @@ fn deploy_uniswap_router(
         "uniswap-v2-router",
         owner,
         runtime_args! {
-            "factory" => Key::Hash(uniswap_factory.contract_hash()),
-            "wcspr" => Key::Hash(wcspr.contract_hash()),
-            "library" => Key::Hash(uniswap_library.contract_hash())
+            "factory" => Key::Hash(uniswap_factory.package_hash()),
+            "wcspr" => Key::Hash(wcspr.package_hash()),
+            "library" => Key::Hash(uniswap_library.package_hash())
         },
+        0,
     )
 }
 
@@ -50,6 +112,7 @@ fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
         runtime_args! {
             "fee_to_setter" => Key::from(owner)
         },
+        0,
     )
 }
 
@@ -72,8 +135,9 @@ fn deploy_uniswap_pair(
             "decimals" => 18 as u8,
             "initial_supply" => U256::from(0),
             "callee_package_hash" => flash_swapper_package_hash,
-            "factory_hash" => Key::Hash(uniswap_factory.contract_hash()),
+            "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
         },
+        0,
     )
 }
 
@@ -89,6 +153,7 @@ fn deploy_erc20(env: &TestEnv, owner: AccountHash) -> TestContract {
             "decimals" => 18 as u8,
             "initial_supply" => U256::from(404000000000000000 as u128)
         },
+        0,
     )
 }
 
@@ -99,6 +164,7 @@ fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
         "library",
         owner,
         runtime_args! {},
+        0,
     )
 }
 
@@ -114,6 +180,7 @@ fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
             "symbol" => "WCSPR",
             "decimals" => decimals
         },
+        0,
     )
 }
 
@@ -129,10 +196,11 @@ fn deploy_flash_swapper(
         "flash_swapper",
         owner,
         runtime_args! {
-            "wcspr" => Key::Hash(wcspr.contract_hash()),
-            "dai" => Key::Hash(wcspr.contract_hash()),
-            "uniswap_v2_factory" => Key::Hash(uniswap_factory.contract_hash())
+            "wcspr" => Key::Hash(wcspr.package_hash()),
+            "dai" => Key::Hash(wcspr.package_hash()),
+            "uniswap_v2_factory" => Key::Hash(uniswap_factory.package_hash())
         },
+        0,
     )
 }
 
@@ -143,6 +211,7 @@ fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
         "liquidity_guard",
         owner,
         runtime_args! {},
+        0,
     )
 }
 
@@ -158,9 +227,10 @@ pub fn deploy_scspr(
         "scspr",
         owner,
         runtime_args! {
-            "uniswap_factory" => Key::Hash(uniswap_factory.contract_hash()),
-            "synthetic_token" => Key::Hash(synthetic_token.contract_hash())
+            "uniswap_factory" => Key::Hash(uniswap_factory.package_hash()),
+            "synthetic_token" => Key::Hash(synthetic_token.package_hash())
         },
+        0,
     )
 }
 
@@ -179,12 +249,13 @@ fn deploy_synthetic_token(
         "synthetic_token",
         owner,
         runtime_args! {
-            "wcspr" => Key::Hash(wcspr.contract_hash()),
-            "uniswap_pair" => Key::Hash(uniswap_pair.contract_hash()),
-            "uniswap_router" => Key::Hash(uniswap_router.contract_hash()),
+            "wcspr" => Key::Hash(wcspr.package_hash()),
+            "uniswap_pair" => Key::Hash(uniswap_pair.package_hash()),
+            "uniswap_router" => Key::Hash(uniswap_router.package_hash()),
             "erc20" => erc20,
             "uniswap_router_package" => uniswap_router_package
         },
+        0,
     )
 }
 
@@ -205,15 +276,16 @@ fn deploy_wise(
         "stakeabletoken",
         owner,
         runtime_args! {
-            "scspr" => Key::Hash(scspr.contract_hash()),
-            "router" => Key::Hash(router.contract_hash()),
-            "factory" => Key::Hash(factory.contract_hash()),
-            "pair" => Key::Hash(pair.contract_hash()),
-            "liquidity_guard" => Key::Hash(liquidity_guard.contract_hash()),
-            "wcspr" => Key::Hash(_wcspr.contract_hash()),
-            "erc20" => Key::Hash(erc20.contract_hash()),
+            "scspr" => Key::Hash(scspr.package_hash()),
+            "router" => Key::Hash(router.package_hash()),
+            "factory" => Key::Hash(factory.package_hash()),
+            "pair" => Key::Hash(pair.package_hash()),
+            "liquidity_guard" => Key::Hash(liquidity_guard.package_hash()),
+            "wcspr" => Key::Hash(_wcspr.package_hash()),
+            "erc20" => Key::Hash(erc20.package_hash()),
             "launch_time" => U256::from(0),
         },
+        0,
     )
 }
 
@@ -247,7 +319,7 @@ fn deploy() -> (
         deploy_uniswap_pair(&env, owner, &flash_swapper, &uniswap_factory);
     let liquidity_guard = deploy_liquidity_guard(&env, owner);
 
-    let _erc20: Key = Key::Hash(erc20.contract_hash());
+    let _erc20: Key = Key::Hash(erc20.package_hash());
 
     let synthetic_token = deploy_synthetic_token(
         &env,
@@ -275,11 +347,11 @@ fn deploy() -> (
         &env,
         "LIQUIDITY_TRANSFORMER",
         owner,
-        Key::Hash(wise_token.contract_hash()),
-        Key::Hash(scspr.contract_hash()),
-        Key::Hash(uniswap_pair.contract_hash()),
-        Key::Hash(uniswap_router.contract_hash()),
-        Key::Hash(wcspr.contract_hash()),
+        Key::Hash(wise_token.package_hash()),
+        Key::Hash(scspr.package_hash()),
+        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(uniswap_router.package_hash()),
+        Key::Hash(wcspr.package_hash()),
         Key::from(uniswap_router_package),
     );
 
@@ -287,7 +359,7 @@ fn deploy() -> (
         &env,
         "proxy",
         owner,
-        Key::Hash(liquidity_transformer.contract_hash()),
+        Key::Hash(liquidity_transformer.package_hash()),
     );
 
     (
@@ -306,6 +378,7 @@ fn deploy() -> (
 }
 
 fn add_liquidity(
+    env: &TestEnv,
     liquidity_contract: TestContract,
     owner: AccountHash,
     proxy: &TestContract,
@@ -316,30 +389,13 @@ fn add_liquidity(
     uniswap_factory: TestContract,
 ) {
     const AMOUNT: u128 = 100_000_000_000_000_000;
-
-    let _package: ContractPackageHash = proxy.query_named_key("package_hash".to_string());
-    let package: Key = Key::from(_package);
-
-    let package_liquidity: Key =
-        liquidity_contract.query_named_key("self_package_hash".to_string());
-
+    let package: Key = Key::Hash(proxy.package_hash());
+    let package_liquidity: Key = Key::Hash(liquidity_contract.package_hash());
     let proxy_inst = LIQUIDITYTRANSFORMERInstance::instance(proxy.clone());
-
     const DAYS: u64 = 15;
     const TIME: u64 = DAYS * 86400 * 1000;
-
-    let erc20_key = Key::Hash(erc20.contract_hash());
-    let wcspr_key: Key = Key::Hash(wcspr.contract_hash());
-
-    proxy.call_contract(
-        owner,
-        "temp_purse",
-        runtime_args! {
-            "liquidity_transformer" => Key::Hash(proxy.contract_hash())
-        },
-        0,
-    );
-    let purse: URef = proxy.query_named_key("result".to_string());
+    let erc20_key = Key::Hash(erc20.package_hash());
+    let wcspr_key: Key = Key::Hash(wcspr.package_hash());
 
     proxy_inst.approve(owner, erc20_key, package_liquidity, U256::from(AMOUNT));
 
@@ -358,7 +414,7 @@ fn add_liquidity(
         runtime_args! {
             "token_a" => erc20_key,
             "token_b" => wcspr_key,
-            "pair_hash" => Key::Hash(uniswap_pair.contract_hash())
+            "pair_hash" => Key::Hash(uniswap_pair.package_hash())
         },
         0,
     );
@@ -402,14 +458,12 @@ fn add_liquidity(
         0,
     );
 
-    wcspr.call_contract(
+    let _: TestContract = deploy_deposit_purse_proxy(
+        &env,
         owner,
+        Key::Hash(wcspr.package_hash()),
         "deposit_no_return",
-        runtime_args! {
-            "purse" => purse,
-            "amount" => U512::from(100_000_000_000_000 as u128)
-        },
-        0,
+        U512::from(100_000_000_000_000 as u128),
     );
 
     erc20.call_contract(
@@ -437,8 +491,6 @@ fn add_liquidity(
         Err(_) => 0,
     };
 
-    let uniswap_pair_package: ContractPackageHash =
-        uniswap_pair.query_named_key("self_package_hash".to_string());
     uniswap_router.call_contract(
         owner,
         "add_liquidity_js_client",
@@ -450,14 +502,15 @@ fn add_liquidity(
             "amount_b_desired" => U256::from(100_000_000_000_0 as u128),
             "amount_a_min" => U256::from(100_000_000_000 as u128),
             "amount_b_min" => U256::from(100_000_000_000 as u128),
-            "to" => Key::from(uniswap_pair_package),
-            "pair" => Some(Key::Hash(uniswap_pair.contract_hash())),
+            "to" => Key::Hash(uniswap_pair.package_hash()),
+            "pair" => Some(Key::Hash(uniswap_pair.package_hash())),
         },
         0,
     );
 }
 
 fn forward_liquidity(
+    env: &TestEnv,
     liquidity_contract: TestContract,
     owner: AccountHash,
     proxy: TestContract,
@@ -477,12 +530,7 @@ fn forward_liquidity(
 
     const MINTED: u128 = 45;
 
-    let proxy_key: Key = Key::Hash(proxy.contract_hash());
-
     let proxy_instance = LIQUIDITYTRANSFORMERInstance::instance(proxy.clone());
-
-    proxy_instance.temp_purse(owner, proxy_key);
-    let purse: URef = proxy_instance.result();
 
     erc20.call_contract(
         owner,
@@ -511,26 +559,24 @@ fn forward_liquidity(
     //     runtime_args! {
     //         "caller_purse" => purse,
     //         "amount" => U512::from(10000000000 as u128)
-    //     },
+    //     },0
     // );
 
     let liquidity_package: Key =
         liquidity_contract.query_named_key("self_package_hash".to_string());
-    wise.call_contract(
+    let _: TestContract = deploy_set_liquidity_transfomer_purse_proxy(
+        &env,
         owner,
+        Key::Hash(wise.package_hash()),
         "set_liquidity_transfomer",
-        runtime_args! {
-            "immutable_transformer" => liquidity_package,
-            "transformer_purse" => purse
-        },
-        0,
+        liquidity_package,
     );
 
     scspr.call_contract(
         owner,
         "set_wise",
         runtime_args! {
-            "wise" => Key::Hash(wise.contract_hash())
+            "wise" => Key::Hash(wise.package_hash())
         },
         0,
     );
@@ -574,20 +620,18 @@ fn forward_liquidity(
         owner,
         "mint",
         runtime_args! {
-            "recipient" => Key::Hash(scspr.contract_hash()),
+            "recipient" => Key::Hash(scspr.package_hash()),
             "amount" => U256::from(AMOUNT)
         },
         0,
     );
 
-    wcspr.call_contract(
+    let _: TestContract = deploy_deposit_purse_proxy(
+        &env,
         owner,
+        Key::Hash(wcspr.package_hash()),
         "deposit_no_return",
-        runtime_args! {
-            "purse" => purse,
-            "amount" => U512::from(MINTED)
-        },
-        0,
+        U512::from(MINTED),
     );
 
     wise.call_contract(
@@ -600,7 +644,7 @@ fn forward_liquidity(
         0,
     );
 
-    let liquidity: Key = Key::Hash(liquidity_contract.contract_hash());
+    let liquidity: Key = Key::Hash(liquidity_contract.package_hash());
 
     let investment_mode: u8 = 1;
     let msg_value: U256 = (75757576000000000 as u128).into();
@@ -610,92 +654,95 @@ fn forward_liquidity(
 
     proxy_instance.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
 
-    let liquidity_transformer = LIQUIDITYTRANSFORMERInstance::instance(liquidity_contract);
-
-    liquidity_transformer.forward_liquidity(owner, purse);
-}
-
-#[test]
-fn test_deploy() {
-    let (_, _, _, _, _, _, _, _, _, _, _) = deploy();
-}
-
-#[test]
-fn test_current_wise_day() {
-    let (_, _, owner, proxy, _, _, _, _, _, _, _) = deploy();
-
-    let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
-
-    const DAYS: u64 = 33;
-    const TIME: u64 = DAYS * 86400 * 1000;
-
-    proxy.current_stakeable_day(owner, TIME);
-
-    let ret: u64 = proxy.result();
-    assert_eq!(ret, DAYS);
-}
-
-#[test]
-fn test_set_settings() {
-    let (_, liquidity_contract, owner, _, _, _, _, pair, wise, scspr, _) = deploy();
-
-    liquidity_contract.call_contract(
+    let _: TestContract = deploy_forward_liquidity_purse_proxy(
+        &env,
         owner,
-        "set_settings",
-        runtime_args! {
-            "wise_token" =>  Key::Hash(wise.contract_hash()),
-            "uniswap_pair" => Key::Hash(pair.contract_hash()),
-            "synthetic_cspr" => Key::Hash(scspr.contract_hash())
-        },
-        0,
+        Key::Hash(wcspr.package_hash()),
+        "forward_liquidity",
     );
-
-    let setted_wise_contract: Key = liquidity_contract.query_named_key("wise_contract".to_string());
-    let setted_uniswap_pair: Key = liquidity_contract.query_named_key("uniswap_pair".to_string());
-    let setted_scspr: Key = liquidity_contract.query_named_key("scspr".to_string());
-
-    assert_eq!(setted_wise_contract, Key::Hash(wise.contract_hash()));
-    assert_eq!(setted_uniswap_pair, Key::Hash(pair.contract_hash()));
-    assert_eq!(setted_scspr, Key::Hash(scspr.contract_hash()));
-}
-
-#[test]
-fn test_renounce_keeper() {
-    let (_, liquidity_contract, owner, _, _, _, _, _, _, _, _) = deploy();
-
-    let res: Key = liquidity_contract.query_named_key("settings_keeper".to_string());
-    let zero: Key = Key::from_formatted_str(
-        "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
-    )
-    .unwrap();
-    assert_ne!(res, zero);
-
-    liquidity_contract.call_contract(owner, "renounce_keeper", runtime_args! {}, 0);
-
-    let res: Key = liquidity_contract.query_named_key("settings_keeper".to_string());
-    assert_eq!(res, zero);
-}
-
-#[test]
-fn test_reserve_wise() {
-    let (_, liquidity_contract, owner, proxy, _, _, _, _, _, _, _) = deploy();
-
-    let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
-    let liquidity: Key = Key::Hash(liquidity_contract.contract_hash());
-
-    let investment_mode: u8 = 1;
-    let msg_value: U256 = (75757576000000000 as u128).into();
-
-    const DAYS: u64 = 15;
-    const TIME: u64 = DAYS * 86400 * 1000;
-
-    proxy.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
 }
 
 // #[test]
+// fn test_deploy() {
+//     let (_, _, _, _, _, _, _, _, _, _, _) = deploy();
+// }
+
+// #[test]
+// fn test_current_wise_day() {
+//     let (_, _, owner, proxy, _, _, _, _, _, _, _) = deploy();
+
+//     let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
+
+//     const DAYS: u64 = 33;
+//     const TIME: u64 = DAYS * 86400 * 1000;
+
+//     proxy.current_stakeable_day(owner, TIME);
+
+//     let ret: u64 = proxy.result();
+//     assert_eq!(ret, DAYS);
+// }
+
+// #[test]
+// fn test_set_settings() {
+//     let (_, liquidity_contract, owner, _, _, _, _, pair, wise, scspr, _) = deploy();
+
+//     liquidity_contract.call_contract(
+//         owner,
+//         "set_settings",
+//         runtime_args! {
+//             "wise_token" =>  Key::Hash(wise.package_hash()),
+//             "uniswap_pair" => Key::Hash(pair.package_hash()),
+//             "synthetic_cspr" => Key::Hash(scspr.package_hash())
+//         },
+//         0,
+//     );
+
+//     let setted_wise_contract: Key = liquidity_contract.query_named_key("wise_contract".to_string());
+//     let setted_uniswap_pair: Key = liquidity_contract.query_named_key("uniswap_pair".to_string());
+//     let setted_scspr: Key = liquidity_contract.query_named_key("scspr".to_string());
+
+//     assert_eq!(setted_wise_contract, Key::Hash(wise.package_hash()));
+//     assert_eq!(setted_uniswap_pair, Key::Hash(pair.package_hash()));
+//     assert_eq!(setted_scspr, Key::Hash(scspr.package_hash()));
+// }
+
+// #[test]
+// fn test_renounce_keeper() {
+//     let (_, liquidity_contract, owner, _, _, _, _, _, _, _, _) = deploy();
+
+//     let res: Key = liquidity_contract.query_named_key("settings_keeper".to_string());
+//     let zero: Key = Key::from_formatted_str(
+//         "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
+//     )
+//     .unwrap();
+//     assert_ne!(res, zero);
+
+//     liquidity_contract.call_contract(owner, "renounce_keeper", runtime_args! {}, 0);
+
+//     let res: Key = liquidity_contract.query_named_key("settings_keeper".to_string());
+//     assert_eq!(res, zero);
+// }
+
+// #[test]
+// fn test_reserve_wise() {
+//     let (_, liquidity_contract, owner, proxy, _, _, _, _, _, _, _) = deploy();
+
+//     let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
+//     let liquidity: Key = Key::Hash(liquidity_contract.package_hash());
+
+//     let investment_mode: u8 = 1;
+//     let msg_value: U256 = (75757576000000000 as u128).into();
+
+//     const DAYS: u64 = 15;
+//     const TIME: u64 = DAYS * 86400 * 1000;
+
+//     proxy.reserve_wise(owner, liquidity, investment_mode, msg_value, TIME);
+// }
+
+#[test]
 fn test_reserve_wise_with_token() {
     let (
-        _,
+        env,
         liquidity_contract,
         owner,
         proxy,
@@ -709,6 +756,7 @@ fn test_reserve_wise_with_token() {
     ) = deploy();
 
     add_liquidity(
+        &env,
         liquidity_contract,
         owner,
         &proxy,
@@ -719,29 +767,29 @@ fn test_reserve_wise_with_token() {
         uniswap_factory,
     );
 
-    let proxy_key: Key = Key::Hash(proxy.contract_hash());
-    let investment_mode: u8 = 1;
-    let proxy_inst = LIQUIDITYTRANSFORMERInstance::instance(proxy);
+    // let proxy_key: Key = Key::Hash(proxy.package_hash());
+    // let investment_mode: u8 = 1;
+    // let proxy_inst = LIQUIDITYTRANSFORMERInstance::instance(proxy);
 
-    const DAYS: u64 = 15;
-    const TIME: u64 = DAYS * 86400 * 1000;
+    // const DAYS: u64 = 15;
+    // const TIME: u64 = DAYS * 86400 * 1000;
 
-    const AMOUNT: u128 = 100_000_000_000_000_000;
+    // const AMOUNT: u128 = 100_000_000_000_000_000;
 
-    proxy_inst.reserve_wise_with_token(
-        owner,
-        proxy_key,
-        Key::Hash(erc20.contract_hash()),
-        U256::from(AMOUNT),
-        investment_mode,
-        TIME,
-    );
+    // proxy_inst.reserve_wise_with_token(
+    //     owner,
+    //     proxy_key,
+    //     Key::Hash(erc20.package_hash()),
+    //     U256::from(AMOUNT),
+    //     investment_mode,
+    //     TIME,
+    // );
 }
 
 // #[test]
 fn test_forward_liquidity() {
     let (
-        _,
+        env,
         liquidity_contract,
         owner,
         proxy,
@@ -755,6 +803,7 @@ fn test_forward_liquidity() {
     ) = deploy();
 
     forward_liquidity(
+        &env,
         liquidity_contract,
         owner,
         proxy,
@@ -771,7 +820,7 @@ fn test_forward_liquidity() {
 // #[test]
 fn test_payout_investor_address() {
     let (
-        _,
+        env,
         liquidity_contract,
         owner,
         proxy,
@@ -785,6 +834,7 @@ fn test_payout_investor_address() {
     ) = deploy();
 
     forward_liquidity(
+        &env,
         liquidity_contract,
         owner,
         proxy.clone(),
@@ -808,7 +858,7 @@ fn test_payout_investor_address() {
 // #[test]
 fn test_get_my_tokens() {
     let (
-        _,
+        env,
         liquidity_contract,
         owner,
         proxy,
@@ -822,6 +872,7 @@ fn test_get_my_tokens() {
     ) = deploy();
 
     forward_liquidity(
+        &env,
         liquidity_contract.clone(),
         owner,
         proxy,
@@ -842,27 +893,27 @@ fn test_get_my_tokens() {
     liquidity_transformer.get_my_tokens(owner);
 }
 
-#[test]
-fn test_prepare_path() {
-    let (_, _, owner, proxy, erc20, wcspr, _, _, _, _, _) = deploy();
+// #[test]
+// fn test_prepare_path() {
+//     let (_, _, owner, proxy, erc20, wcspr, _, _, _, _, _) = deploy();
 
-    let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
+//     let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
 
-    let token_address: Key = Key::Hash(erc20.contract_hash());
+//     let token_address: Key = Key::Hash(erc20.package_hash());
 
-    proxy.prepare_path(owner, token_address);
-    let ret: Vec<Key> = proxy.result();
-    assert_eq!(ret[0], Key::Hash(erc20.contract_hash()));
-    assert_eq!(ret[1], Key::Hash(wcspr.contract_hash()));
-}
+//     proxy.prepare_path(owner, token_address);
+//     let ret: Vec<Key> = proxy.result();
+//     assert_eq!(ret[0], Key::Hash(erc20.package_hash()));
+//     assert_eq!(ret[1], Key::Hash(wcspr.package_hash()));
+// }
 
 // #[test]
 fn test_request_refund() {
     let (_, liquidity_contract, owner, proxy, _, _, _, _, _, _, _) = deploy();
 
-    let proxy_key: Key = Key::Hash(proxy.contract_hash());
+    let proxy_key: Key = Key::Hash(proxy.package_hash());
     let proxy = LIQUIDITYTRANSFORMERInstance::instance(proxy);
-    let liquidity: Key = Key::Hash(liquidity_contract.contract_hash());
+    let liquidity: Key = Key::Hash(liquidity_contract.package_hash());
 
     let investment_mode: u8 = 1;
     let msg_value: U256 = (75757576000000000 as u128).into();

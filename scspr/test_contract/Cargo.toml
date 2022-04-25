@@ -6,9 +6,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-casper-contract = "=1.4.3"
-casper-types = "=1.4.6"
-blake2 = "0.9.1"
+casper-contract = "1.4.4"
+casper-types = "1.5.0"
 
 [[bin]]
 name = "proxy-scspr"
@@ -16,6 +15,3 @@ path = "bin/main.rs"
 bench = false
 doctest = false
 test = false
-
-[features]
-default = ["casper-contract/std", "casper-types/std", "casper-contract/test-support"]

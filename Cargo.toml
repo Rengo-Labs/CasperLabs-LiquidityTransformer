@@ -12,6 +12,7 @@ members = [
   "liquidity_transformer/liquidity_transformer",
   "liquidity_transformer/liquidity_transformer_crate",
   "liquidity_transformer/liquidity_transformer_tests",
+  "liquidity_transformer/purse_proxy",
   "liquidity_transformer/test_contract",
   # SYNTHETIC HELPER
   "synthetic_helper_crate",

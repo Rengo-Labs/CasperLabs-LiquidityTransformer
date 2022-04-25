@@ -27,6 +27,7 @@ impl SCSPRInstance {
                 "uniswap_factory" => uniswap_factory,
                 "synthetic_token" => synthetic_token
             },
+            0,
         )
     }
 
@@ -44,6 +45,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "scspr" => scspr,
             },
+            0,
         )
     }
 
