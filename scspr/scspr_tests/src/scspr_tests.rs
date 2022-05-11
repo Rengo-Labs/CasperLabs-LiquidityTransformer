@@ -341,19 +341,6 @@ fn forward_liquidity(
     uniswap_factory: TestContract,
     wcspr: TestContract,
 ) {
-    // EXT
-    uniswap_pair.call_contract(
-        owner,
-        "initialize",
-        runtime_args! {
-            "token0" => Key::Hash(erc20.contract_hash()),
-            "token1" => Key::Hash(erc20.contract_hash()),
-            "factory_hash" => Key::Hash(uniswap_factory.contract_hash()),
-        },
-        0,
-    );
-    // EXT
-
     let uniswap_pair_package: ContractPackageHash =
         uniswap_pair.query_named_key("self_package_hash".to_string());
 

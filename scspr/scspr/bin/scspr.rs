@@ -2,7 +2,7 @@
 #![no_std]
 
 extern crate alloc;
-use alloc::{boxed::Box, collections::BTreeSet, format, vec};
+use alloc::{boxed::Box, collections::BTreeSet, format, string::ToString, vec};
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
@@ -10,6 +10,7 @@ use casper_contract::{
 use casper_types::{
     runtime_args, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, EntryPoint,
     EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
+    U512,
 };
 use contract_utils::{ContractContext, OnChainContractStorage};
 use scspr_crate::{
@@ -46,6 +47,17 @@ impl Scspr {
             self,
             uniswap_factory,
             synthetic_token,
+            Key::from(contract_hash),
+            package_hash,
+        );
+        ERC20::init(
+            self,
+            "Synthetic CSPR".to_string(),
+            "SCSPR".to_string(),
+            9,
+            0.into(),
+            "domain_separator".to_string(),
+            "permit_type_hash".to_string(),
             Key::from(contract_hash),
             package_hash,
         );
@@ -184,6 +196,14 @@ fn balance_of() {
 
     let ret: U256 = Scspr::default().balance_of(owner);
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn fund_contract() {
+    let purse: URef = runtime::get_named_arg("purse");
+    let amount: U512 = runtime::get_named_arg("amount");
+
+    Scspr::default().fund_contract(purse, amount);
 }
 
 fn get_entry_points() -> EntryPoints {
@@ -340,6 +360,16 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "balance_of",
         vec![Parameter::new("owner", Key::cl_type())],
+        U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "fund_contract",
+        vec![
+            Parameter::new("purse", URef::cl_type()),
+            Parameter::new("amount", U512::cl_type()),
+        ],
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,

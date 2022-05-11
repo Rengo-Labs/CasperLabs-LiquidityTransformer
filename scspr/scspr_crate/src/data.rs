@@ -12,6 +12,13 @@ pub const SELF_CONTRACT_HASH: &str = "self_contract_hash";
 pub const SELF_PACKAGE_HASH: &str = "self_package_hash";
 pub const OWNER: &str = "owner";
 
+pub fn zero_address() -> Key {
+    Key::from_formatted_str(
+        "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
+    )
+    .unwrap()
+}
+
 pub fn set_main_purse(purse: URef) {
     set_key(MAIN_PURSE, Key::from(purse));
 }
@@ -27,7 +34,7 @@ pub fn set_wise_contract(wise_contract: Key) {
 }
 
 pub fn get_wise_contract() -> Key {
-    get_key(WISE_CONTRACT).unwrap_or_revert()
+    get_key(WISE_CONTRACT).unwrap_or(zero_address())
 }
 
 pub fn set_synthetic_token(synthetic_token: Key) {
@@ -35,7 +42,7 @@ pub fn set_synthetic_token(synthetic_token: Key) {
 }
 
 pub fn get_synthetic_token() -> Key {
-    get_key(SYNTHETIC_TOKEN).unwrap_or_revert()
+    get_key(SYNTHETIC_TOKEN).unwrap_or(zero_address())
 }
 
 pub fn set_uniswap_factory(uniswap_factory: Key) {
@@ -43,7 +50,7 @@ pub fn set_uniswap_factory(uniswap_factory: Key) {
 }
 
 pub fn get_uniswap_factory() -> Key {
-    get_key(UNISWAP_FACTORY).unwrap_or_revert()
+    get_key(UNISWAP_FACTORY).unwrap_or(zero_address())
 }
 
 pub fn set_hash(contract_hash: Key) {
@@ -51,7 +58,7 @@ pub fn set_hash(contract_hash: Key) {
 }
 
 pub fn get_hash() -> Key {
-    get_key(SELF_CONTRACT_HASH).unwrap_or_revert()
+    get_key(SELF_CONTRACT_HASH).unwrap_or(zero_address())
 }
 
 pub fn set_package_hash(package_hash: ContractPackageHash) {
@@ -59,7 +66,7 @@ pub fn set_package_hash(package_hash: ContractPackageHash) {
 }
 
 pub fn get_contract_package_hash() -> ContractPackageHash {
-    get_key(SELF_PACKAGE_HASH).unwrap_or_revert()
+    get_key(SELF_PACKAGE_HASH).unwrap_or_default()
 }
 
 pub fn set_owner(owner: Key) {
@@ -67,5 +74,5 @@ pub fn set_owner(owner: Key) {
 }
 
 pub fn get_owner() -> Key {
-    get_key(OWNER).unwrap_or_revert()
+    get_key(OWNER).unwrap_or(zero_address())
 }

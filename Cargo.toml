@@ -18,5 +18,6 @@ members = [
   "synthetic_helper_crate",
   #SYNTHETIC TOKEN
   "synthetic_token/synthetic_token",
-  "synthetic_token/synthetic_token_crate"
+  "synthetic_token/synthetic_token_crate",
+  "synthetic_token/synthetic_token_tests",
 ]

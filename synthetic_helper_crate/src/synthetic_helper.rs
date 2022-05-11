@@ -21,8 +21,8 @@ impl From<Error> for ApiError {
 }
 
 pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
-    fn init(&mut self) {
-        data::set_contract_purse(system::create_purse());
+    fn init(&mut self, contract_purse: URef) {
+        data::set_contract_purse(contract_purse);
     }
 
     fn _prepare_path(&mut self, token_from: Key, token_to: Key) -> Vec<Key> {
@@ -55,8 +55,9 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
 
     fn _get_balance_of(&mut self, token: Key, owner: Key) -> U256 {
         // Generic Token
-        runtime::call_contract(
+        runtime::call_versioned_contract(
             token.into_hash().unwrap_or_revert().into(),
+            None,
             "balance_of",
             runtime_args! {
                 "owner" => owner
@@ -64,12 +65,8 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
         )
     }
 
-    fn fund_contract(&mut self, caller_purse: URef, amount: U512) {
-        let _ = system::transfer_from_purse_to_purse(
-            caller_purse,
-            data::get_contract_purse(),
-            amount,
-            None,
-        );
+    fn fund_contract(&mut self, purse: URef, amount: U512) {
+        let _ =
+            system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None);
     }
 }

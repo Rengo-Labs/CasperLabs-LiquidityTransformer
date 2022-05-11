@@ -22,6 +22,7 @@ transfer_helper_contract = ${stakeable_token_directory}/transfer_helper/
 wasm_src_path = target/wasm32-unknown-unknown/release/
 wasm_dest_liquidity_transformer_path = ${liquidity_transformer_directory}/liquidity_transformer/liquidity_transformer_tests/wasm/
 wasm_dest_scspr_path = ${liquidity_transformer_directory}/scspr/scspr_tests/wasm/
+wasm_dest_synthetic_token_path = ${liquidity_transformer_directory}/synthetic_token/synthetic_token_tests/wasm/
 
 prepare:
 	rustup target add wasm32-unknown-unknown
@@ -85,23 +86,38 @@ copy-wasm-file:
 	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 
+    # Synthetic Token
+	cp ${factory_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${wcspr_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${flash_swapper_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${pair_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${library_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
+	cp ${liquidity_transformer_directory}/${wasm_src_path}synthetic_token.wasm ${wasm_dest_synthetic_token_path}
+
 build-contract:
     # Building transformer contracts
-	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p proxy_liquidity_transformer -p proxy_scspr --target wasm32-unknown-unknown
+	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p purse-proxy -p proxy_liquidity_transformer -p proxy_scspr --target wasm32-unknown-unknown
 
 clean:
 	cargo clean
 	rm -rf liquidity_transformer_tests/wasm/*.wasm
 	rm -rf scspr_tests/wasm/*.wasm
+	rm -rf synthetic_token_tests/wasm/*.wasm
 	rm -rf Cargo.lock
 
 test-liquidity-transformer:
 	cargo test -p liquidity_transformer_tests
 test-scspr:
 	cargo test -p scspr_tests
+test-synthetic-token:
+	cargo test -p synthetic_token_tests
 
 test:
-	make test-liquidity-transformer && make test-scspr
+	make test-liquidity-transformer && make test-scspr && make test-synthetic-token
 
 full-test:
 	make all && make test
+
+dev:
+	make all && make test-liquidity-transformer

@@ -32,7 +32,7 @@ pub fn fund_account(account: &AccountHash) -> ExecuteRequest {
         .with_authorization_keys(&[*DEFAULT_ACCOUNT_ADDR])
         .with_empty_payment_bytes(runtime_args! {ARG_AMOUNT => *DEFAULT_PAYMENT})
         .with_transfer_args(runtime_args! {
-            mint::ARG_AMOUNT => U512::from(30_000_000_000_000_u64),
+            mint::ARG_AMOUNT => U512::from(30_000_000_000_000_0u64),
             mint::ARG_TARGET => *account,
             mint::ARG_ID => <Option::<u64>>::None
         })

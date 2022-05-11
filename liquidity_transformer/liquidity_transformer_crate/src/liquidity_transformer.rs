@@ -10,7 +10,7 @@ use casper_contract::{
     contract_api::{runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{runtime_args, ApiError, ContractHash, Key, RuntimeArgs, URef, U256, U512};
+use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
 use contract_utils::{ContractContext, ContractStorage};
 use renvm_sig::keccak256;
 
@@ -169,12 +169,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
     fn renounce_keeper(&self) {
         self.only_keeper();
-        data::set_settings_keeper(
-            Key::from_formatted_str(
-                "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
-            )
-            .unwrap(),
-        );
+        data::set_settings_keeper(data::zero_address());
     }
 
     fn reserve_wise(&mut self, investment_mode: u8, msg_value: U256, caller_purse: URef) {
@@ -201,8 +196,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             "recipient" => data::hash(),
             "amount" => token_amount
         };
-        let _: Result<(), u32> = runtime::call_contract(
-            ContractHash::from(token_address.into_hash().unwrap()),
+        let _: Result<(), u32> = runtime::call_versioned_contract(
+            token_address.into_hash().unwrap_or_revert().into(),
+            None,
             "transfer_from",
             args,
         );
@@ -211,8 +207,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             "spender" => data::uniswap_router_package(),
             "amount" => token_amount
         };
-        let () = runtime::call_contract(
-            ContractHash::from(token_address.into_hash().unwrap()),
+        let () = runtime::call_versioned_contract(
+            token_address.into_hash().unwrap_or_revert().into(),
+            None,
             "approve",
             args,
         );
@@ -231,8 +228,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             "to" => data::self_purse(),
             "deadline" => U256::from(time + 7_200_000)
         };
-        let amounts: Vec<U256> = runtime::call_contract(
-            ContractHash::from(data::uniswap_router().into_hash().unwrap()),
+        let amounts: Vec<U256> = runtime::call_versioned_contract(
+            data::uniswap_router().into_hash().unwrap_or_revert().into(),
+            None,
             "swap_exact_tokens_for_cspr",
             args,
         );
@@ -391,16 +389,18 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         let scspr_tokens_amount: U256 = data::Globals::instance().get("total_cspr_contributed");
         let wise_tokens_amount: U256 = data::Globals::instance().get("total_transfer_tokens");
         let value: U256 = data::Globals::instance().get("total_cspr_contributed");
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
+            None,
             "liquidity_deposit",
             runtime_args! {
                 "msg_value" => value
             },
         );
 
-        let _: U256 = runtime::call_contract(
+        let _: U256 = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
+            None,
             "form_liquidity",
             runtime_args! {
               "purse" => purse,
@@ -408,8 +408,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             },
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::uniswap_router_package(),
@@ -417,8 +418,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             },
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::wise().into_hash().unwrap_or_revert().into(),
+            None,
             "mint_supply",
             runtime_args! {
                 "investor_address" => data::hash(),
@@ -426,8 +428,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             },
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::wise().into_hash().unwrap_or_revert().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::uniswap_router_package(),
@@ -435,8 +438,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             },
         );
 
-        let () = runtime::call_contract(
-            ContractHash::from(data::wise().into_hash().unwrap()),
+        let () = runtime::call_versioned_contract(
+            data::wise().into_hash().unwrap_or_revert().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::uniswap_router_package(),
@@ -446,8 +450,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
         let time: u64 = runtime::get_blocktime().into();
         let (amount_token_a, amount_token_b, liquidity): (U256, U256, U256) =
-            runtime::call_contract(
-                data::uniswap_router().into_hash().unwrap().into(),
+            runtime::call_versioned_contract(
+                data::uniswap_router().into_hash().unwrap_or_revert().into(),
+                None,
                 "add_liquidity",
                 runtime_args! {
                     "token_a" => data::wise(),
@@ -456,7 +461,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                     "amount_b_desired" => scspr_tokens_amount,
                     "amount_a_min" => U256::from(0),
                     "amount_b_min" => U256::from(0),
-                    "to" => Key::from_formatted_str("hash-0000000000000000000000000000000000000000000000000000000000000000".into()).unwrap(),
+                    "to" => data::zero_address(),
                     "deadline" => U256::from(time + 7_200_000),
                     "pair" => Some(data::uniswap_pair())
                 },
@@ -485,8 +490,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         PurchasedTokens::instance().set(&investor_address_hash, 0.into());
 
         if payout > U256::from(0) {
-            let () = runtime::call_contract(
+            let () = runtime::call_versioned_contract(
                 data::wise().into_hash().unwrap_or_revert().into(),
+                None,
                 "mint_supply",
                 runtime_args! {
                     "investor_address" => investor_address,
@@ -505,13 +511,12 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn current_stakeable_day(&self) -> u64 {
-        let args: RuntimeArgs = runtime_args! {};
-        let current_stakeable_day: u64 = runtime::call_contract(
+        runtime::call_versioned_contract(
             data::wise().into_hash().unwrap_or_revert().into(),
+            None,
             "current_stakeable_day",
-            args,
-        );
-        current_stakeable_day
+            runtime_args! {},
+        )
     }
 
     fn request_refund(&mut self, caller_purse: URef) -> (U256, U256) {

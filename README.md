@@ -4,11 +4,7 @@ Implementation of `Synthetic CSPR`, `Synthetic Helper` and `Synthetic Token` Con
 
 ## Steps
 
-# Required Repositories
-
-`UniswapV2-core` `UniswapRouter` `Wise-StakeableToken` need to be pulled before
-
-Following are the contracts in this folder
+There are 5 contracts in this folder
 
 1. Synthetic CSPR Contract
 2. Synthetic Helper Contract

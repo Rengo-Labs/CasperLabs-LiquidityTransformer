@@ -126,8 +126,15 @@ impl UniqueInvestors {
     }
 }
 
+pub fn zero_address() -> Key {
+    Key::from_formatted_str(
+        "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
+    )
+    .unwrap()
+}
+
 pub fn uniswap_router_package() -> Key {
-    get_key(UNISWAP_ROUTER_PACKAGE).unwrap_or_revert()
+    get_key(UNISWAP_ROUTER_PACKAGE).unwrap_or(zero_address())
 }
 
 pub fn set_uniswap_router_package(uniswap_router_package: Key) {
@@ -135,7 +142,7 @@ pub fn set_uniswap_router_package(uniswap_router_package: Key) {
 }
 
 pub fn uniswap_router() -> Key {
-    get_key(UNISWAP_ROUTER).unwrap_or_revert()
+    get_key(UNISWAP_ROUTER).unwrap_or(zero_address())
 }
 
 pub fn set_uniswap_router(uniswap_router: Key) {
@@ -143,7 +150,7 @@ pub fn set_uniswap_router(uniswap_router: Key) {
 }
 
 pub fn wcspr() -> Key {
-    get_key(WCSPR).unwrap_or_revert()
+    get_key(WCSPR).unwrap_or(zero_address())
 }
 
 pub fn set_wcspr(wcspr: Key) {
@@ -151,7 +158,7 @@ pub fn set_wcspr(wcspr: Key) {
 }
 
 pub fn scspr() -> Key {
-    get_key(SCSPR).unwrap_or_revert()
+    get_key(SCSPR).unwrap_or(zero_address())
 }
 
 pub fn set_scspr(wcspr: Key) {
@@ -159,7 +166,7 @@ pub fn set_scspr(wcspr: Key) {
 }
 
 pub fn hash() -> Key {
-    get_key(SELF_CONTRACT_HASH).unwrap_or_revert()
+    get_key(SELF_CONTRACT_HASH).unwrap_or(zero_address())
 }
 
 pub fn set_hash(contract_hash: Key) {
@@ -167,7 +174,7 @@ pub fn set_hash(contract_hash: Key) {
 }
 
 pub fn package() -> Key {
-    get_key(SELF_PACKAGE_HASH).unwrap_or_revert()
+    get_key(SELF_PACKAGE_HASH).unwrap_or(zero_address())
 }
 
 pub fn set_package(package_hash: Key) {
@@ -175,7 +182,7 @@ pub fn set_package(package_hash: Key) {
 }
 
 pub fn wise() -> Key {
-    get_key(WISE_CONTRACT).unwrap_or_revert()
+    get_key(WISE_CONTRACT).unwrap_or(zero_address())
 }
 
 pub fn set_wise(hash: Key) {
@@ -183,7 +190,7 @@ pub fn set_wise(hash: Key) {
 }
 
 pub fn uniswap_pair() -> Key {
-    get_key(UNISWAP_PAIR).unwrap_or_revert()
+    get_key(UNISWAP_PAIR).unwrap_or(zero_address())
 }
 
 pub fn set_uniswap_pair(hash: Key) {
@@ -191,7 +198,7 @@ pub fn set_uniswap_pair(hash: Key) {
 }
 
 pub fn settings_keeper() -> Key {
-    get_key(SETTINGS_KEEPER).unwrap_or_revert()
+    get_key(SETTINGS_KEEPER).unwrap_or(zero_address())
 }
 
 pub fn set_settings_keeper(hash: Key) {

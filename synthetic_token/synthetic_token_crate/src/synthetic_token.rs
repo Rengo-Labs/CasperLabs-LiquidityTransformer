@@ -29,7 +29,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         uniswap_router: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
-        uniswap_router_package: Key,
         master_address_purse: URef,
     ) {
         ERC20::init(
@@ -59,10 +58,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         data::set_uniswap_pair(uniswap_pair);
         data::set_wcspr(wcspr);
 
-        data::set_hash(contract_hash);
+        data::set_contract_hash(contract_hash);
         data::set_package_hash(package_hash);
         data::set_self_purse(system::create_purse());
-        data::set_uniswap_router_package(uniswap_router_package);
     }
 
     fn get_trading_fee_amount(
@@ -148,7 +146,10 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _get_synthetic_balance(&mut self) -> U256 {
-        self._get_balance_of(data::get_hash(), data::get_uniswap_pair())
+        self._get_balance_of(
+            Key::from(data::get_package_hash()),
+            data::get_uniswap_pair(),
+        )
     }
 
     fn get_evaluation(&mut self) -> U256 {
@@ -180,7 +181,10 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _get_lp_token_balance(&mut self) -> U256 {
-        self._get_balance_of(data::get_uniswap_pair(), data::get_hash())
+        self._get_balance_of(
+            data::get_uniswap_pair(),
+            Key::from(data::get_package_hash()),
+        )
     }
 
     fn get_liquidity_percent(&mut self) -> U256 {
@@ -188,8 +192,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _get_liquidity_percent(&mut self) -> U256 {
-        let total_supply: U256 = runtime::call_contract(
+        let total_supply: U256 = runtime::call_versioned_contract(
             data::get_uniswap_pair().into_hash().unwrap().into(),
+            None,
             "total_supply",
             runtime_args! {},
         );
@@ -228,7 +233,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         self._unwrap(amount_wcspr);
         self._profit(amount_wcspr);
 
-        self.burn(data::get_hash(), amount_scspr);
+        self.burn(Key::from(data::get_package_hash()), amount_scspr);
 
         let master_address: Key = data::get_master_address();
         self.synthetic_token_emit(&SyntheticTokenEvent::SendFeesToMaster {
@@ -247,8 +252,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let path: Vec<Key> = self._prepare_path(from_token_address, to_token_address);
         let mut time: u64 = runtime::get_blocktime().into();
         time += 7200;
-        let ret: Vec<U256> = runtime::call_contract(
+        let ret: Vec<U256> = runtime::call_versioned_contract(
             data::get_uniswap_router().into_hash().unwrap().into(),
+            None,
             "swap_exact_tokens_for_tokens",
             runtime_args! {
                 "amount" => amount,
@@ -262,33 +268,36 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _add_liquidity(&mut self, _amount_wcspr: U256, _amount_scspr: U256) -> (U256, U256) {
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
+            None,
             "approve",
             runtime_args! {
-                "spender" => data::get_uniswap_router_package(),
+                "spender" => data::get_uniswap_router(),
                 "amount" => _amount_wcspr
             },
         );
-        self.approve(data::get_uniswap_router_package(), _amount_scspr);
+        self.approve(data::get_uniswap_router(), _amount_scspr);
 
         let mut time: u64 = runtime::get_blocktime().into();
         time += 7200;
-        let (amount_wcspr, amount_scspr, liquidity): (U256, U256, U256) = runtime::call_contract(
-            data::get_uniswap_router().into_hash().unwrap().into(),
-            "add_liquidity",
-            runtime_args! {
-                "token_a" => data::get_wcspr(),
-                "token_b" => data::get_hash(),
-                "amount_a_desired" => _amount_wcspr,
-                "amount_b_desired" => _amount_scspr,
-                "amount_a_min" => U256::from(0),
-                "amount_b_min" => U256::from(0),
-                "to" => data::get_hash(),
-                "deadline" => U256::from(time),
-                "pair" => Some(data::get_uniswap_pair())
-            },
-        );
+        let (amount_wcspr, amount_scspr, liquidity): (U256, U256, U256) =
+            runtime::call_versioned_contract(
+                data::get_uniswap_router().into_hash().unwrap().into(),
+                None,
+                "add_liquidity",
+                runtime_args! {
+                    "token_a" => data::get_wcspr(),
+                    "token_b" => Key::from(data::get_package_hash()),
+                    "amount_a_desired" => _amount_wcspr,
+                    "amount_b_desired" => _amount_scspr,
+                    "amount_a_min" => U256::from(0),
+                    "amount_b_min" => U256::from(0),
+                    "to" => Key::from(data::get_package_hash()),
+                    "deadline" => U256::from(time),
+                    "pair" => Some(data::get_uniswap_pair())
+                },
+            );
 
         self.synthetic_token_emit(&SyntheticTokenEvent::LiquidityAdded {
             amount_wcspr,
@@ -300,8 +309,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _remove_liquidity(&mut self, amount: U256) -> (U256, U256) {
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_uniswap_pair().into_hash().unwrap().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::get_uniswap_router(),
@@ -311,16 +321,17 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let mut time: u64 = runtime::get_blocktime().into();
         time += 7200;
 
-        let (amount_wcspr, amount_scspr): (U256, U256) = runtime::call_contract(
+        let (amount_wcspr, amount_scspr): (U256, U256) = runtime::call_versioned_contract(
             data::get_uniswap_router().into_hash().unwrap().into(),
+            None,
             "remove_liquidity",
             runtime_args! {
                 "token_a" => data::get_wcspr(),
-                "token_b" => data::get_hash(),
+                "token_b" => Key::from(data::get_package_hash()),
                 "liquidity" => amount,
                 "amount_a_min" => U256::from(0),
                 "amount_b_min" => U256::from(0),
-                "to" => data::get_hash(),
+                "to" => Key::from(data::get_package_hash()),
                 "deadline" => U256::from(time)
             },
         );
@@ -363,9 +374,12 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _self_burn(&mut self) {
-        let get_balance_of: U256 = self._get_balance_of(data::get_hash(), data::get_hash());
+        let get_balance_of: U256 = self._get_balance_of(
+            Key::from(data::get_package_hash()),
+            Key::from(data::get_package_hash()),
+        );
 
-        self.burn(data::get_hash(), get_balance_of);
+        self.burn(Key::from(data::get_package_hash()), get_balance_of);
     }
 
     fn _clean_up(&mut self, deposit_amount: U256) {
@@ -382,8 +396,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
 
         data::set_bypass_enabled(true);
 
-        let _: Result<(), u32> = runtime::call_contract(
+        let _: Result<(), u32> = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
+            None,
             "withdraw",
             runtime_args! {
                 "to_purse" => data::get_self_purse(),
@@ -417,11 +432,12 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _skim_pair(&mut self) {
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_uniswap_pair()
                 .into_hash()
                 .unwrap_or_revert()
                 .into(),
+            None,
             "skim",
             runtime_args! {
                 "to" => data::get_master_address()
@@ -458,15 +474,16 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
 
         self._unwrap(amount_wcspr);
         self._profit(amount_wcspr);
-        self.mint(data::get_hash(), LIMIT_AMOUNT);
+        self.mint(Key::from(data::get_package_hash()), LIMIT_AMOUNT);
 
         let swap_amount: U256 = self._swap_amount_arbitrage_scspr();
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
+            None,
             "approve",
             runtime_args! {
-                "owner" => data::get_hash(),
+                "owner" => Key::from(data::get_package_hash()),
                 "spender" => data::get_uniswap_router(),
                 "amount" => swap_amount
             },
@@ -475,12 +492,13 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let amount_out_received_wcspr: U256 = self._swap_exact_tokens_for_tokens(
             swap_amount,
             0.into(),
-            data::get_hash(),
+            Key::from(data::get_package_hash()),
             data::get_wcspr(),
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_transfer_helper().into_hash().unwrap().into(),
+            None,
             "forward_funds",
             runtime_args! {
                 "to" => data::get_wcspr(),
@@ -488,7 +506,10 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             },
         );
 
-        let get_balance_of: U256 = self._get_balance_of(data::get_hash(), data::get_hash());
+        let get_balance_of: U256 = self._get_balance_of(
+            Key::from(data::get_package_hash()),
+            Key::from(data::get_package_hash()),
+        );
 
         self._add_liquidity(amount_out_received_wcspr, get_balance_of);
 
@@ -528,8 +549,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             amount_scspr,
         });
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::get_uniswap_router(),
@@ -537,8 +559,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             },
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
+            None,
             "approve",
             runtime_args! {
                 "spender" => data::get_uniswap_router(),
@@ -550,14 +573,15 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             amount_wcspr,
             0.into(),
             data::get_wcspr(),
-            data::get_hash(),
+            Key::from(data::get_package_hash()),
         );
 
-        let () = runtime::call_contract(
+        let () = runtime::call_versioned_contract(
             data::get_transfer_helper().into_hash().unwrap().into(),
+            None,
             "forward_funds",
             runtime_args! {
-                "to" => data::get_hash(),
+                "to" => Key::from(data::get_package_hash()),
                 "amount" => amount_out_received_scspr
             },
         );
@@ -573,7 +597,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
 
     fn synthetic_token_emit(&mut self, synthetic_token_event: &SyntheticTokenEvent) {
         let mut events = Vec::new();
-        let tmp = data::get_contract_package_hash().to_formatted_string();
+        let tmp = data::get_package_hash().to_formatted_string();
         let tmp: Vec<&str> = tmp.split("-").collect();
         let package_hash = tmp[1].to_string();
         match synthetic_token_event {
