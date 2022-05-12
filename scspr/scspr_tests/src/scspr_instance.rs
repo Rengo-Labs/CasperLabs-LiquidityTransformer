@@ -15,6 +15,9 @@ impl SCSPRInstance {
         env: &TestEnv,
         contract_name: &str,
         sender: AccountHash,
+        wcspr: Key,
+        uniswap_pair: Key,
+        uniswap_router: Key,
         uniswap_factory: Key,
         synthetic_token: Key,
     ) -> TestContract {
@@ -24,6 +27,9 @@ impl SCSPRInstance {
             contract_name,
             sender,
             runtime_args! {
+                "wcspr" => wcspr,
+                "uniswap_pair" => uniswap_pair,
+                "uniswap_router" => uniswap_router,
                 "uniswap_factory" => uniswap_factory,
                 "synthetic_token" => synthetic_token
             },
@@ -132,17 +138,6 @@ impl SCSPRInstance {
         );
     }
 
-    pub fn form_liquidity(&self, sender: AccountHash, pair: Key) {
-        self.0.call_contract(
-            sender,
-            "form_liquidity",
-            runtime_args! {
-                "pair" => pair
-            },
-            0,
-        );
-    }
-
     pub fn forward_ownership(&self, sender: AccountHash, new_master: Key) {
         self.0.call_contract(
             sender,
@@ -183,6 +178,7 @@ impl SCSPRInstance {
         liquidity_transformer: Key,
         investment_mode: u8,
         msg_value: U256,
+        block_time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -192,7 +188,7 @@ impl SCSPRInstance {
                 "investment_mode" => investment_mode,
                 "msg_value" => msg_value,
             },
-            0,
+            block_time,
         );
     }
 

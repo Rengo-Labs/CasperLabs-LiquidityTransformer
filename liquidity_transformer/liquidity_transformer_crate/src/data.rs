@@ -133,14 +133,6 @@ pub fn zero_address() -> Key {
     .unwrap()
 }
 
-pub fn uniswap_router_package() -> Key {
-    get_key(UNISWAP_ROUTER_PACKAGE).unwrap_or(zero_address())
-}
-
-pub fn set_uniswap_router_package(uniswap_router_package: Key) {
-    set_key(UNISWAP_ROUTER_PACKAGE, uniswap_router_package);
-}
-
 pub fn uniswap_router() -> Key {
     get_key(UNISWAP_ROUTER).unwrap_or(zero_address())
 }

@@ -26,7 +26,7 @@ fn constructor() {
     mappings::set_key(&mappings::self_package_key(), package_hash);
     mappings::set_key(
         &mappings::scspr_key(),
-        ContractHash::from(scspr.into_hash().unwrap_or_default()),
+        ContractPackageHash::from(scspr.into_hash().unwrap_or_default()),
     );
 }
 
@@ -34,8 +34,9 @@ fn constructor() {
 fn temp_purse() {
     let contract: Key = runtime::get_named_arg("contract");
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         contract.into_hash().unwrap_or_revert().into(),
+        None,
         "_temp_purse",
         runtime_args! {
             "purse" => account::get_main_purse()
@@ -51,11 +52,12 @@ fn _temp_purse() {
 
 #[no_mangle]
 fn set_master() {
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
     let master_address: ContractPackageHash = mappings::get_key(&mappings::self_package_key());
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         scspr_address,
+        None,
         "set_master",
         runtime_args! {
             "master_address" => Key::from(master_address)
@@ -66,21 +68,22 @@ fn set_master() {
 #[no_mangle]
 fn forward_ownership() {
     let new_master: Key = runtime::get_named_arg("new_master");
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
     let args: RuntimeArgs = runtime_args! {
         "new_master" => new_master
     };
-    let () = runtime::call_contract(scspr_address, "forward_ownership", args);
+    let () = runtime::call_versioned_contract(scspr_address, None, "forward_ownership", args);
 }
 
 #[no_mangle]
 fn form_liquidity() {
     let pair: Key = runtime::get_named_arg("pair");
     let purse: URef = runtime::get_named_arg("purse");
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
 
-    let ret: U256 = runtime::call_contract(
+    let ret: U256 = runtime::call_versioned_contract(
         scspr_address,
+        None,
         "form_liquidity",
         runtime_args! {
             "pair" => pair,
@@ -92,49 +95,50 @@ fn form_liquidity() {
 
 #[no_mangle]
 fn define_helper() {
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
     let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
     let args: RuntimeArgs = runtime_args! {
         "transfer_helper" => transfer_helper
     };
-    let ret: Key = runtime::call_contract(scspr_address, "define_helper", args);
+    let ret: Key = runtime::call_versioned_contract(scspr_address, None, "define_helper", args);
     mappings::set_key(&mappings::transfer_helper_key(), ret);
 }
 
 #[no_mangle]
 fn define_token() {
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
     let wise_token: Key = runtime::get_named_arg("wise_token");
     let args: RuntimeArgs = runtime_args! {
         "wise_token" => wise_token
     };
-    let ret: Key = runtime::call_contract(scspr_address, "define_token", args);
+    let ret: Key = runtime::call_versioned_contract(scspr_address, None, "define_token", args);
     mappings::set_key(&mappings::transfer_helper_key(), ret);
 }
 
 #[no_mangle]
 fn get_token0() {
-    let pair: ContractHash = runtime::get_named_arg("pair");
+    let pair: ContractPackageHash = runtime::get_named_arg("pair");
     let args: RuntimeArgs = runtime_args! {};
-    let ret: Key = runtime::call_contract(pair, "token0", args);
+    let ret: Key = runtime::call_versioned_contract(pair, None, "token0", args);
     mappings::set_key(&mappings::token0_key(), ret);
 }
 
 #[no_mangle]
 fn get_token1() {
-    let pair: ContractHash = runtime::get_named_arg("pair");
+    let pair: ContractPackageHash = runtime::get_named_arg("pair");
     let args: RuntimeArgs = runtime_args! {};
-    let ret: Key = runtime::call_contract(pair, "token1", args);
+    let ret: Key = runtime::call_versioned_contract(pair, None, "token1", args);
     mappings::set_key(&mappings::token1_key(), ret);
 }
 
 #[no_mangle]
 fn set_wise() {
-    let scspr_address: ContractHash = mappings::get_key(&mappings::scspr_key());
+    let scspr_address: ContractPackageHash = mappings::get_key(&mappings::scspr_key());
 
     let wise: Key = runtime::get_named_arg("wise");
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         scspr_address,
+        None,
         "set_wise",
         runtime_args! {
             "wise" => wise
@@ -148,8 +152,9 @@ fn approve() {
     let _spender: Key = runtime::get_named_arg("spender");
     let amount: U256 = runtime::get_named_arg("amount");
 
-    let package_hash: ContractPackageHash = runtime::call_contract(
+    let package_hash: ContractPackageHash = runtime::call_versioned_contract(
         _spender.into_hash().unwrap_or_revert().into(),
+        None,
         "package_hash",
         runtime_args! {},
     );
@@ -159,15 +164,21 @@ fn approve() {
         "spender" => spender,
         "amount" => amount
     };
-    let () = runtime::call_contract(token.into_hash().unwrap_or_revert().into(), "approve", args);
+    let () = runtime::call_versioned_contract(
+        token.into_hash().unwrap_or_revert().into(),
+        None,
+        "approve",
+        args,
+    );
 }
 
 #[no_mangle]
 fn pair_total_supply() {
     let pair: Key = runtime::get_named_arg("pair");
 
-    let ret: U256 = runtime::call_contract(
+    let ret: U256 = runtime::call_versioned_contract(
         pair.into_hash().unwrap_or_revert().into(),
+        None,
         "total_supply",
         runtime_args! {},
     );
@@ -181,8 +192,9 @@ fn reserve_wise() {
     let msg_value: U256 = runtime::get_named_arg("msg_value");
     let caller_purse: URef = account::get_main_purse();
 
-    let () = runtime::call_contract(
+    let () = runtime::call_versioned_contract(
         liquidity_transformer.into_hash().unwrap_or_revert().into(),
+        None,
         "reserve_wise",
         runtime_args! {
             "investment_mode" => investment_mode,
@@ -277,14 +289,14 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "get_token0",
-        vec![Parameter::new("pair", ContractHash::cl_type())],
+        vec![Parameter::new("pair", ContractPackageHash::cl_type())],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "get_token1",
-        vec![Parameter::new("pair", ContractHash::cl_type())],
+        vec![Parameter::new("pair", ContractPackageHash::cl_type())],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,

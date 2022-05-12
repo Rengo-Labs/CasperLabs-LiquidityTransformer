@@ -1,5 +1,5 @@
 use alloc::string::{String, ToString};
-use casper_types::{Key, U256};
+use casper_types::{Key, U256, U512};
 
 pub enum SyntheticTokenEvent {
     LiquidityRemoved {
@@ -16,7 +16,7 @@ pub enum SyntheticTokenEvent {
         liquidity: U256,
     },
     MasterProfit {
-        amount_wcspr: U256,
+        amount_wcspr: U512,
         master_address: Key,
     },
     SendArbitrageProfitToMaster {

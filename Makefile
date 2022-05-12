@@ -93,7 +93,7 @@ copy-wasm-file:
 	cp ${pair_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 	cp ${library_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
-	cp ${liquidity_transformer_directory}/${wasm_src_path}synthetic_token.wasm ${wasm_dest_synthetic_token_path}
+	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 
 build-contract:
     # Building transformer contracts
@@ -120,4 +120,4 @@ full-test:
 	make all && make test
 
 dev:
-	make all && make test-liquidity-transformer
+	make all && make test-synthetic-token

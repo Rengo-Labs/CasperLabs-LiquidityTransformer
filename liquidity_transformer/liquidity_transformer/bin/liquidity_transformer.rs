@@ -34,7 +34,6 @@ impl LiquidityTransformer {
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
-        uniswap_router_package: Key,
         package_hash: Key,
         contract_hash: Key,
         purse: URef,
@@ -46,7 +45,6 @@ impl LiquidityTransformer {
             uniswap_pair,
             uniswap_router,
             wcspr,
-            uniswap_router_package,
             package_hash,
             contract_hash,
             purse,
@@ -61,7 +59,6 @@ fn constructor() {
     let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let wcspr: Key = runtime::get_named_arg("wcspr");
-    let uniswap_router_package: Key = runtime::get_named_arg("uniswap_router_package");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let purse: URef = runtime::get_named_arg("purse");
@@ -72,7 +69,6 @@ fn constructor() {
         uniswap_pair,
         uniswap_router,
         wcspr,
-        uniswap_router_package,
         Key::from(package_hash),
         Key::from(contract_hash),
         purse,
@@ -169,7 +165,6 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("uniswap_pair", Key::cl_type()),
             Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("wcspr", Key::cl_type()),
-            Parameter::new("uniswap_router_package", Key::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
             Parameter::new("purse", URef::cl_type()),
@@ -282,7 +277,6 @@ fn call() {
         let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let wcspr: Key = runtime::get_named_arg("wcspr");
-        let uniswap_router_package: Key = runtime::get_named_arg("uniswap_router_package");
         let purse: URef = system::create_purse();
         let constructor_args = runtime_args! {
             "wise_token" => wise_token,
@@ -290,7 +284,6 @@ fn call() {
             "uniswap_pair" => uniswap_pair,
             "uniswap_router" => uniswap_router,
             "wcspr" => wcspr,
-            "uniswap_router_package" => uniswap_router_package,
             "package_hash" => package_hash,
             "contract_hash" => contract_hash,
             "purse" => purse

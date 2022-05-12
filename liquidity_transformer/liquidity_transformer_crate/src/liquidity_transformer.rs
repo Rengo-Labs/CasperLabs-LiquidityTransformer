@@ -97,7 +97,6 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
-        uniswap_router_package: Key,
         package_hash: Key,
         contract_hash: Key,
         purse: URef,
@@ -107,8 +106,6 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         data::set_uniswap_pair(uniswap_pair);
         data::set_uniswap_router(uniswap_router);
         data::set_wcspr(wcspr);
-
-        data::set_uniswap_router_package(uniswap_router_package);
 
         data::set_hash(contract_hash);
         data::set_package(package_hash);
@@ -204,7 +201,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         );
 
         let args: RuntimeArgs = runtime_args! {
-            "spender" => data::uniswap_router_package(),
+            "spender" => data::uniswap_router(),
             "amount" => token_amount
         };
         let () = runtime::call_versioned_contract(
@@ -413,7 +410,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "approve",
             runtime_args! {
-                "spender" => data::uniswap_router_package(),
+                "spender" => data::uniswap_router(),
                 "amount" => scspr_tokens_amount
             },
         );
@@ -433,7 +430,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "approve",
             runtime_args! {
-                "spender" => data::uniswap_router_package(),
+                "spender" => data::uniswap_router(),
                 "amount" => wise_tokens_amount
             },
         );
@@ -443,7 +440,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "approve",
             runtime_args! {
-                "spender" => data::uniswap_router_package(),
+                "spender" => data::uniswap_router(),
                 "amount" => wise_tokens_amount
             },
         );

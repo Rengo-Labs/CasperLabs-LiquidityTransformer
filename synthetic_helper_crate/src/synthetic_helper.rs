@@ -66,7 +66,8 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
     }
 
     fn fund_contract(&mut self, purse: URef, amount: U512) {
-        let _ =
+        let ret =
             system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None);
+        ret.unwrap_or_revert();
     }
 }

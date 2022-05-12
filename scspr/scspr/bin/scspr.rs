@@ -38,26 +38,26 @@ impl ERC20<OnChainContractStorage> for Scspr {}
 impl Scspr {
     fn constructor(
         &mut self,
+        wcspr: Key,
+        uniswap_pair: Key,
+        uniswap_router: Key,
         uniswap_factory: Key,
         synthetic_token: Key,
         contract_hash: ContractHash,
         package_hash: ContractPackageHash,
     ) {
+        SYNTHETICTOKEN::init(
+            self,
+            wcspr,
+            uniswap_pair,
+            uniswap_router,
+            Key::from(contract_hash),
+            package_hash,
+        );
         SCSPR::init(
             self,
             uniswap_factory,
             synthetic_token,
-            Key::from(contract_hash),
-            package_hash,
-        );
-        ERC20::init(
-            self,
-            "Synthetic CSPR".to_string(),
-            "SCSPR".to_string(),
-            9,
-            0.into(),
-            "domain_separator".to_string(),
-            "permit_type_hash".to_string(),
             Key::from(contract_hash),
             package_hash,
         );
@@ -66,11 +66,17 @@ impl Scspr {
 
 #[no_mangle]
 fn constructor() {
+    let wcspr: Key = runtime::get_named_arg("wcspr");
+    let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
+    let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
     let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
     Scspr::default().constructor(
+        wcspr,
+        uniswap_pair,
+        uniswap_router,
         uniswap_factory,
         synthetic_token,
         contract_hash,
@@ -211,6 +217,9 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "constructor",
         vec![
+            Parameter::new("wcspr", Key::cl_type()),
+            Parameter::new("uniswap_pair", Key::cl_type()),
+            Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("uniswap_factory", Key::cl_type()),
             Parameter::new("synthetic_token", Key::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
@@ -390,9 +399,15 @@ fn call() {
         let (contract_hash, _): (ContractHash, _) =
             storage::add_contract_version(package_hash, get_entry_points(), Default::default());
 
+        let wcspr: Key = runtime::get_named_arg("wcspr");
+        let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
+        let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
         let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
         let constructor_args = runtime_args! {
+            "wcspr" => wcspr,
+            "uniswap_pair" => uniswap_pair,
+            "uniswap_router" => uniswap_router,
             "uniswap_factory" => uniswap_factory,
             "synthetic_token" => synthetic_token,
             "contract_hash" => contract_hash,

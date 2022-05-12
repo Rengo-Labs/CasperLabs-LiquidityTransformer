@@ -11,7 +11,9 @@ use casper_types::{
 };
 use contract_utils::{ContractContext, ContractStorage};
 use synthetic_token_crate::{
-    data as synthetic_token_data, synthetic_helper_crate::SYNTHETICHELPER, SYNTHETICTOKEN,
+    data::{self as synthetic_token_data, set_master_address},
+    synthetic_helper_crate::data::{get_contract_purse, set_contract_purse},
+    SYNTHETICTOKEN,
 };
 
 use crate::alloc::{collections::BTreeMap, string::ToString};
@@ -30,10 +32,9 @@ pub trait SCSPR<Storage: ContractStorage>:
         data::set_synthetic_token(synthetic_token);
         data::set_hash(contract_hash);
         data::set_package_hash(package_hash);
-        data::set_main_purse(system::create_purse());
+        set_contract_purse(system::create_purse());
         data::set_owner(self.get_caller());
-
-        SYNTHETICHELPER::init(self, data::get_main_purse());
+        set_master_address(self.get_caller());
     }
 
     fn set_master(&self, master_address: Key) {
@@ -116,7 +117,7 @@ pub trait SCSPR<Storage: ContractStorage>:
 
         self._unwrap(amount_wcspr);
 
-        let contract_purse = data::get_main_purse();
+        let contract_purse = get_contract_purse();
         let _ = system::transfer_from_purse_to_purse(
             contract_purse,
             succesor_purse,
@@ -195,8 +196,8 @@ pub trait SCSPR<Storage: ContractStorage>:
             runtime::revert(ApiError::from(Error::InvalidState));
         }
         synthetic_token_data::set_allow_deposit(true);
-        let cover_amount: U512 = self._get_balance_half();
-        let cover_amount: U256 = U256::from_str(cover_amount.to_string().as_str()).unwrap();
+        let cover_amount_: U512 = self._get_balance_half();
+        let cover_amount: U256 = U256::from_str(cover_amount_.to_string().as_str()).unwrap();
         self.mint(Key::from(data::get_contract_package_hash()), cover_amount);
         let uniswap_router: Key = runtime::call_versioned_contract(
             data::get_synthetic_token()
@@ -207,16 +208,10 @@ pub trait SCSPR<Storage: ContractStorage>:
             "uniswap_router",
             runtime_args! {},
         );
-        let uniswap_router_package: ContractPackageHash = runtime::call_versioned_contract(
-            uniswap_router.into_hash().unwrap_or_revert().into(),
-            None,
-            "package_hash",
-            runtime_args! {},
-        );
 
         self._approve(
             Key::from(data::get_contract_package_hash()),
-            Key::from(uniswap_router_package),
+            uniswap_router,
             cover_amount,
         );
 
@@ -230,23 +225,22 @@ pub trait SCSPR<Storage: ContractStorage>:
             runtime_args! {},
         );
 
-        let _cover_amount = U512::from_str(cover_amount.to_string().as_str()).unwrap();
-
-        let _: Result<(), u32> = runtime::call_versioned_contract(
+        let ret: Result<(), u32> = runtime::call_versioned_contract(
             wcspr.into_hash().unwrap_or_revert().into(),
             None,
             "deposit",
             runtime_args! {
                 "purse" => purse,
-                "amount" => _cover_amount
+                "amount" => cover_amount_
             },
         );
+        ret.unwrap_or_revert();
         let () = runtime::call_versioned_contract(
             wcspr.into_hash().unwrap_or_revert().into(),
             None,
             "approve",
             runtime_args! {
-                "spender" => Key::from(uniswap_router_package),
+                "spender" => uniswap_router,
                 "amount" => cover_amount
             },
         );
@@ -260,12 +254,12 @@ pub trait SCSPR<Storage: ContractStorage>:
                 "add_liquidity",
                 runtime_args! {
                     "token_a" => wcspr,
-                    "token_b" => data::get_hash(),
+                    "token_b" => Key::from(data::get_contract_package_hash()),
                     "amount_a_desired" => cover_amount,
                     "amount_b_desired" => cover_amount,
                     "amount_a_min" => zero,
                     "amount_b_min" => zero,
-                    "to" => data::get_hash(),
+                    "to" => Key::from(data::get_contract_package_hash()),
                     "deadline" => U256::from(time + 7200),
                     "pair" => _pair,
                 },
@@ -278,10 +272,8 @@ pub trait SCSPR<Storage: ContractStorage>:
             liquidity,
         });
 
-        let _remaining_balance: U512 =
-            system::get_purse_balance(data::get_main_purse()).unwrap_or_revert();
-
-        let remaining_balance: U256 = _remaining_balance.as_usize().into();
+        let remaining_balance: U512 =
+            system::get_purse_balance(get_contract_purse()).unwrap_or_revert();
 
         self._profit(remaining_balance);
         self._update_evaluation();

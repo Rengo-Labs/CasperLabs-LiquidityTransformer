@@ -2,8 +2,6 @@ use casper_contract::unwrap_or_revert::UnwrapOrRevert;
 use casper_types::{ContractPackageHash, Key, URef};
 use contract_utils::{get_key, set_key};
 
-pub const MAIN_PURSE: &str = "main_purse";
-
 pub const WISE_CONTRACT: &str = "wise_contract";
 pub const SYNTHETIC_TOKEN: &str = "synthetic_token";
 pub const UNISWAP_FACTORY: &str = "uniswap_factory";
@@ -17,16 +15,6 @@ pub fn zero_address() -> Key {
         "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
     )
     .unwrap()
-}
-
-pub fn set_main_purse(purse: URef) {
-    set_key(MAIN_PURSE, Key::from(purse));
-}
-
-pub fn get_main_purse() -> URef {
-    let contract_main_purse_key: Key = get_key(MAIN_PURSE).unwrap_or_revert();
-    let contract_main_purse = contract_main_purse_key.as_uref().unwrap_or_revert();
-    *contract_main_purse
 }
 
 pub fn set_wise_contract(wise_contract: Key) {

@@ -1,6 +1,5 @@
 use casper_types::{
-    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef,
-    U256, U512,
+    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef, U256,
 };
 use test_env::{TestContract, TestEnv};
 
@@ -20,7 +19,6 @@ impl LIQUIDITYTRANSFORMERInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
-        uniswap_router_package: Key,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -33,7 +31,6 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "wcspr" => wcspr,
-                "uniswap_router_package" => uniswap_router_package
             },
             0,
         )
@@ -146,7 +143,13 @@ impl LIQUIDITYTRANSFORMERInstance {
         );
     }
 
-    pub fn request_refund(&self, sender: AccountHash, liquidity_transformer: Key, proxy_key: Key) {
+    pub fn request_refund(
+        &self,
+        sender: AccountHash,
+        liquidity_transformer: Key,
+        proxy_key: Key,
+        block_time: u64,
+    ) {
         self.0.call_contract(
             sender,
             "request_refund",
@@ -154,7 +157,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "liquidity_transformer" => liquidity_transformer,
                 "proxy_key" => proxy_key
             },
-            0,
+            block_time,
         );
     }
 

@@ -29,38 +29,26 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         uniswap_router: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
-        master_address_purse: URef,
     ) {
         ERC20::init(
             self,
             "Synthetic Token".to_string(),
             "ST".to_string(),
-            18,
+            9,
             0.into(),
             "".to_string(),
             "".to_string(),
             contract_hash,
             package_hash,
         );
-        // DEFAULT INITIALIZATIONS
         data::set_owner(self.get_caller());
-
         data::set_master_address(self.get_caller());
-        data::set_master_address_purse(master_address_purse);
-        data::set_current_evaluation(0.into());
-
-        data::set_token_defined(false);
-        data::set_allow_deposit(false);
-        data::set_helper_defined(false);
-        data::set_bypass_enabled(false);
-
         data::set_uniswap_router(uniswap_router);
         data::set_uniswap_pair(uniswap_pair);
         data::set_wcspr(wcspr);
-
         data::set_contract_hash(contract_hash);
         data::set_package_hash(package_hash);
-        data::set_self_purse(system::create_purse());
+        set_contract_purse(system::create_purse());
     }
 
     fn get_trading_fee_amount(
@@ -231,7 +219,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         });
 
         self._unwrap(amount_wcspr);
-        self._profit(amount_wcspr);
+        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
 
         self.burn(Key::from(data::get_package_hash()), amount_scspr);
 
@@ -388,7 +376,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let amount_wcspr: U256 =
             U256::from_dec_str(self._get_balance_diff(deposit_amount).to_string().as_str())
                 .unwrap();
-        self._profit(amount_wcspr);
+        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
     }
 
     fn _unwrap(&mut self, amount_wcspr: U256) {
@@ -401,7 +389,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             None,
             "withdraw",
             runtime_args! {
-                "to_purse" => data::get_self_purse(),
+                "to_purse" => get_contract_purse(),
                 "amount" => amount_wcspr
             },
         );
@@ -409,18 +397,14 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         data::set_bypass_enabled(false);
     }
 
-    fn _profit(&mut self, amount_wcspr: U256) {
+    fn _profit(&mut self, amount_wcspr: U512) {
         let ret = system::transfer_from_purse_to_purse(
-            data::get_self_purse(),
+            get_contract_purse(),
             data::get_master_address_purse(),
-            U512::from_str(amount_wcspr.to_string().as_str()).unwrap(),
+            amount_wcspr,
             None,
         );
-
-        if ret.is_err() {
-            runtime::revert(ret.err().unwrap_or_revert());
-        }
-
+        ret.unwrap_or_revert();
         self.synthetic_token_emit(&SyntheticTokenEvent::MasterProfit {
             amount_wcspr,
             master_address: data::get_master_address(),
@@ -473,7 +457,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         });
 
         self._unwrap(amount_wcspr);
-        self._profit(amount_wcspr);
+        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
         self.mint(Key::from(data::get_package_hash()), LIMIT_AMOUNT);
 
         let swap_amount: U256 = self._swap_amount_arbitrage_scspr();
@@ -539,7 +523,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         });
 
         self._unwrap(amount_wcspr);
-        self._profit(amount_wcspr);
+        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
 
         let amount = self._to_remove_cspr();
         let (amount_wcspr, amount_scspr) = self._remove_liquidity(amount);

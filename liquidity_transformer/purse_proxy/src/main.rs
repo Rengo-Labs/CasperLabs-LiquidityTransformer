@@ -7,16 +7,25 @@ use casper_contract::{
     contract_api::{account, runtime, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{runtime_args, ApiError, ContractPackageHash, Key, RuntimeArgs, URef, U512};
+use casper_types::{
+    runtime_args, ApiError, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
+};
 
 pub const AMOUNT_RUNTIME_ARG: &str = "amount";
 pub const PURSE_RUNTIME_ARG: &str = "purse";
+
+pub const DESTINATION_DEPOSIT_SCSPR: &str = "deposit";
+pub const MSG_VALUE_RUNTIME_ARG: &str = "msg_value";
+pub const SUCCESOR_PURSE_RUNTIME_ARG: &str = "succesor_purse";
 
 pub const DESTINATION_DEPOSIT: &str = "deposit_no_return";
 
 pub const DESTINATION_SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 pub const IMMUTABLE_TRANSFORMER_RUNTIME_ARG: &str = "immutable_transformer";
 pub const TRANSFORMER_PURSE_RUNTIME_ARG: &str = "transformer_purse";
+
+pub const DESTINATION_FORM_LIQUIDITY: &str = "form_liquidity";
+pub const PAIR_RUNTIME_ARG: &str = "pair";
 
 pub const DESTINATION_FORWARD_LIQUIDITY: &str = "forward_liquidity";
 
@@ -73,7 +82,7 @@ pub extern "C" fn call() {
                 DESTINATION_SET_LIQUIDITY_TRANSFOMER,
                 runtime_args! {
                     IMMUTABLE_TRANSFORMER_RUNTIME_ARG => immutable_transformer,
-                    TRANSFORMER_PURSE_RUNTIME_ARG => system::create_purse()
+                    TRANSFORMER_PURSE_RUNTIME_ARG => secondary_purse
                 },
             )
         }
@@ -82,7 +91,28 @@ pub extern "C" fn call() {
             None,
             DESTINATION_FORWARD_LIQUIDITY,
             runtime_args! {
-                PURSE_RUNTIME_ARG => system::create_purse(),
+                PURSE_RUNTIME_ARG => secondary_purse,
+            },
+        ),
+        DESTINATION_FORM_LIQUIDITY => {
+            let pair: Key = runtime::get_named_arg(PAIR_RUNTIME_ARG);
+            let ret: U256 = runtime::call_versioned_contract(
+                ContractPackageHash::from(destination_package_hash.into_hash().unwrap()),
+                None,
+                DESTINATION_FORM_LIQUIDITY,
+                runtime_args! {
+                    PURSE_RUNTIME_ARG => secondary_purse,
+                    PAIR_RUNTIME_ARG => pair
+                },
+            );
+        }
+        DESTINATION_DEPOSIT_SCSPR => runtime::call_versioned_contract(
+            ContractPackageHash::from(destination_package_hash.into_hash().unwrap()),
+            None,
+            DESTINATION_DEPOSIT_SCSPR,
+            runtime_args! {
+                MSG_VALUE_RUNTIME_ARG => amount,
+                SUCCESOR_PURSE_RUNTIME_ARG => secondary_purse
             },
         ),
         _ => runtime::revert(ApiError::MissingKey),

@@ -1,4 +1,7 @@
-use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
+use casper_contract::{
+    contract_api::{runtime, system},
+    unwrap_or_revert::UnwrapOrRevert,
+};
 use casper_types::{ApiError, ContractPackageHash, Key, URef, U256};
 use contract_utils::{get_key, set_key};
 
@@ -136,7 +139,10 @@ pub fn set_master_address_purse(master_address_purse: URef) {
 }
 
 pub fn get_master_address_purse() -> URef {
-    get_key(MASTER_ADDRESS_PURSE).unwrap_or_default()
+    get_key(MASTER_ADDRESS_PURSE).unwrap_or({
+        set_master_address_purse(system::create_purse());
+        get_key(MASTER_ADDRESS_PURSE).unwrap_or_default()
+    })
 }
 
 pub fn set_contract_hash(contract_hash: Key) {
@@ -153,16 +159,4 @@ pub fn set_package_hash(package_hash: ContractPackageHash) {
 
 pub fn get_package_hash() -> ContractPackageHash {
     get_key(CONTRACT_PACKAGE_HASH).unwrap_or_default()
-}
-
-pub fn set_self_purse(purse: URef) {
-    runtime::put_key(&SELF_PURSE, purse.into());
-}
-
-pub fn get_self_purse() -> URef {
-    let destination_purse_key = runtime::get_key(&SELF_PURSE).unwrap_or_revert();
-    match destination_purse_key.as_uref() {
-        Some(uref) => *uref,
-        None => runtime::revert(ApiError::User(ErrorCodes::Abort as u16)),
-    }
 }

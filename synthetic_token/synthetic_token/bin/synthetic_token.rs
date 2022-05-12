@@ -4,12 +4,13 @@
 extern crate alloc;
 use alloc::{boxed::Box, collections::BTreeSet, format, vec};
 use casper_contract::{
-    contract_api::{account, runtime, storage},
+    contract_api::{account, runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
     runtime_args, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, EntryPoint,
     EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
+    U512,
 };
 
 use contract_utils::{ContractContext, OnChainContractStorage};
@@ -38,7 +39,6 @@ impl SyntheticToken {
         uniswap_router: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
-        master_address_purse: URef,
     ) {
         SYNTHETICTOKEN::init(
             self,
@@ -47,7 +47,6 @@ impl SyntheticToken {
             uniswap_router,
             contract_hash,
             package_hash,
-            master_address_purse,
         );
     }
 }
@@ -59,7 +58,6 @@ fn constructor() {
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
-    let master_address_purse: URef = runtime::get_named_arg("master_address_purse");
 
     SyntheticToken::default().constructor(
         wcspr,
@@ -67,7 +65,6 @@ fn constructor() {
         uniswap_router,
         Key::from(contract_hash),
         package_hash,
-        master_address_purse,
     );
 }
 
@@ -143,6 +140,14 @@ fn get_liquidity_percent() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+#[no_mangle]
+fn fund_contract() {
+    let purse: URef = runtime::get_named_arg("purse");
+    let amount: U512 = runtime::get_named_arg("amount");
+
+    SyntheticToken::default().fund_contract(purse, amount);
+}
+
 fn get_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
@@ -153,7 +158,6 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
-            Parameter::new("master_address_purse", URef::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Groups(vec![Group::new("constructor")]),
@@ -239,6 +243,16 @@ fn get_entry_points() -> EntryPoints {
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "fund_contract",
+        vec![
+            Parameter::new("purse", URef::cl_type()),
+            Parameter::new("amount", U512::cl_type()),
+        ],
+        U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
     entry_points
 }
 
@@ -263,8 +277,7 @@ fn call() {
             "uniswap_pair" => uniswap_pair,
             "uniswap_router" => uniswap_router,
             "contract_hash" => contract_hash,
-            "package_hash"=> package_hash,
-            "master_address_purse" => account::get_main_purse()
+            "package_hash" => package_hash,
         };
 
         // Add the constructor group to the package hash with a single URef.

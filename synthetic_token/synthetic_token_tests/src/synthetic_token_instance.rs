@@ -50,6 +50,47 @@ impl SYNTHETICTOKENInstance {
         );
     }
 
+    pub fn get_amount_payout(&self, sender: AccountHash, amount: U256) {
+        self.0.call_contract(
+            sender,
+            "get_amount_payout",
+            runtime_args! {
+                "amount" => amount
+            },
+            0,
+        );
+    }
+
+    pub fn get_wrapped_balance(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_wrapped_balance", runtime_args! {}, 0);
+    }
+
+    pub fn get_synthetic_balance(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_synthetic_balance", runtime_args! {}, 0);
+    }
+
+    pub fn get_evaluation(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_evaluation", runtime_args! {}, 0);
+    }
+
+    pub fn get_pair_balances(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_pair_balances", runtime_args! {}, 0);
+    }
+
+    pub fn get_lp_token_balance(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_lp_token_balance", runtime_args! {}, 0);
+    }
+
+    pub fn get_liquidity_percent(&self, sender: AccountHash) {
+        self.0
+            .call_contract(sender, "get_liquidity_percent", runtime_args! {}, 0);
+    }
+
     // Result methods
     pub fn package_hash(&self) -> ContractPackageHash {
         self.0.query_named_key("self_package_hash".to_string())
