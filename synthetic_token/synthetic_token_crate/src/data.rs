@@ -31,7 +31,7 @@ pub enum ErrorCodes {
     Abort = 35,
 }
 
-fn zero_address() -> Key {
+pub fn zero_address() -> Key {
     Key::from_formatted_str(
         "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
     )

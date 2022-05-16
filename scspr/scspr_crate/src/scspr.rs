@@ -92,12 +92,12 @@ pub trait SCSPR<Storage: ContractStorage>:
         self._clean_up(deposit_amount);
         self._fees_decision();
         self._arbitrage_decision();
-        // self._settle_cspr(deposit_amount, succesor_purse);
-        // self._update_evaluation();
-        // self.scspr_emit(&SCSPREvent::DepositedLiquidity {
-        //     deposit_amount,
-        //     transformer_address: self.get_caller(),
-        // });
+        self._settle_cspr(deposit_amount, succesor_purse);
+        self._update_evaluation();
+        self.scspr_emit(&SCSPREvent::DepositedLiquidity {
+            deposit_amount,
+            transformer_address: self.get_caller(),
+        });
     }
 
     fn withdraw(&mut self, token_amount: U256, succesor_purse: URef) {

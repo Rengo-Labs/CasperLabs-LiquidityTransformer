@@ -229,6 +229,23 @@ fn deploy_flash_swapper(
     )
 }
 
+fn deploy_transfer_helper(
+    env: &TestEnv,
+    owner: AccountHash,
+    transfer_invoker: Key,
+) -> TestContract {
+    TestContract::new(
+        &env,
+        "transfer_helper.wasm",
+        "transfer_helper",
+        owner,
+        runtime_args! {
+            "transfer_invoker" => transfer_invoker
+        },
+        0,
+    )
+}
+
 fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
         &env,
@@ -248,6 +265,7 @@ pub fn deploy_scspr(
     uniswap_router: &TestContract,
     uniswap_factory: &TestContract,
     synthetic_token: &TestContract,
+    transfer_helper: &TestContract,
 ) -> TestContract {
     TestContract::new(
         &env,
@@ -259,7 +277,8 @@ pub fn deploy_scspr(
             "uniswap_pair" => Key::Hash(uniswap_pair.package_hash()),
             "uniswap_router" => Key::Hash(uniswap_router.package_hash()),
             "uniswap_factory" => Key::Hash(uniswap_factory.package_hash()),
-            "synthetic_token" => Key::Hash(synthetic_token.package_hash())
+            "synthetic_token" => Key::Hash(synthetic_token.package_hash()),
+            "transfer_helper" => Key::Hash(transfer_helper.package_hash()),
         },
         0,
     )
@@ -271,8 +290,7 @@ fn deploy_synthetic_token(
     wcspr: &TestContract,
     uniswap_pair: &TestContract,
     uniswap_router: &TestContract,
-    erc20: Key,
-    uniswap_router_package: Key,
+    transfer_helper: &TestContract,
 ) -> TestContract {
     TestContract::new(
         &env,
@@ -283,8 +301,7 @@ fn deploy_synthetic_token(
             "wcspr" => Key::Hash(wcspr.package_hash()),
             "uniswap_pair" => Key::Hash(uniswap_pair.package_hash()),
             "uniswap_router" => Key::Hash(uniswap_router.package_hash()),
-            "erc20" => erc20,
-            "uniswap_router_package" => uniswap_router_package
+            "transfer_helper" => Key::Hash(transfer_helper.package_hash()),
         },
         0,
     )
@@ -349,6 +366,7 @@ fn deploy() -> (
     let uniswap_pair: TestContract =
         deploy_uniswap_pair(&env, owner, &flash_swapper, &uniswap_factory);
     let liquidity_guard = deploy_liquidity_guard(&env, owner);
+    let transfer_helper = deploy_transfer_helper(&env, owner, Key::Account(owner));
 
     let _erc20: Key = Key::Hash(erc20.package_hash());
 
@@ -358,9 +376,9 @@ fn deploy() -> (
         &_wcspr,
         &uniswap_pair,
         &uniswap_router,
-        _erc20,
-        Key::Hash(uniswap_router_package),
+        &transfer_helper,
     );
+    deploy_transfer_helper(&env, owner, Key::Hash(synthetic_token.package_hash()));
     let scspr = deploy_scspr(
         &env,
         owner,
@@ -369,6 +387,7 @@ fn deploy() -> (
         &uniswap_router,
         &uniswap_factory,
         &synthetic_token,
+        &transfer_helper,
     );
     let wise_token = deploy_wise(
         &env,
@@ -984,6 +1003,8 @@ fn test_request_refund() {
 // SCSPR TESTS
 // #[test]
 fn test_scspr_deposit() {
+    // AMOUNT = U256::from(10000000000000000000000000u128)
+
     let (
         env,
         liquidity_transformer,
@@ -1022,7 +1043,7 @@ fn test_scspr_deposit() {
             "name" => "ERC",
             "symbol" => "ERC20",
             "decimals" => 18 as u8,
-            "initial_supply" => U256::from(404000000000000000 as u128)
+            "initial_supply" => U256::from(0)
         },
         0,
     );
@@ -1043,7 +1064,7 @@ fn test_scspr_deposit() {
         "mint",
         runtime_args! {
             "to" => Key::Hash(uniswap_pair.package_hash()),
-            "amount" => U256::from(10000000000000000000000000u128)
+            "amount" => U256::from(100)
         },
         0,
     );
@@ -1052,7 +1073,7 @@ fn test_scspr_deposit() {
         "mint",
         runtime_args! {
             "to" => Key::Hash(uniswap_pair.package_hash()),
-            "amount" => U256::from(10000000000000000000000000u128)
+            "amount" => U256::from(100)
         },
         0,
     );
@@ -1062,7 +1083,7 @@ fn test_scspr_deposit() {
         "erc20_mint",
         runtime_args! {
             "to" => Key::Hash(wcspr.package_hash()),
-            "amount" => U256::from(10000000000000000000000000u128)
+            "amount" => U256::from(100)
         },
         0,
     );
@@ -1071,7 +1092,7 @@ fn test_scspr_deposit() {
         "erc20_mint",
         runtime_args! {
             "to" => Key::Hash(uniswap_router.package_hash()),
-            "amount" => U256::from(10000000000000000000000000u128)
+            "amount" => U256::from(100)
         },
         0,
     );
@@ -1080,7 +1101,16 @@ fn test_scspr_deposit() {
         "erc20_mint",
         runtime_args! {
             "to" => Key::Hash(uniswap_pair.package_hash()),
-            "amount" => U256::from(10000000000000000000000000u128)
+            "amount" => U256::from(100)
+        },
+        0,
+    );
+    uniswap_pair.call_contract(
+        owner,
+        "erc20_mint",
+        runtime_args! {
+            "to" => Key::Hash(synthetic_token.package_hash()),
+            "amount" => U256::from(100)
         },
         0,
     );

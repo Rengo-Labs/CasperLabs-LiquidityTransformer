@@ -70,6 +70,7 @@ copy-wasm-file:
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${library_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${stakeable_token_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
+	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${liquidity_guard_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 

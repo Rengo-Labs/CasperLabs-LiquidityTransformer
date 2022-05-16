@@ -37,6 +37,7 @@ impl SyntheticToken {
         wcspr: Key,
         uniswap_pair: Key,
         uniswap_router: Key,
+        transfer_helper: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
     ) {
@@ -45,6 +46,7 @@ impl SyntheticToken {
             wcspr,
             uniswap_pair,
             uniswap_router,
+            transfer_helper,
             contract_hash,
             package_hash,
         );
@@ -56,6 +58,7 @@ fn constructor() {
     let wcspr: Key = runtime::get_named_arg("wcspr");
     let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
+    let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
 
@@ -63,6 +66,7 @@ fn constructor() {
         wcspr,
         uniswap_pair,
         uniswap_router,
+        transfer_helper,
         Key::from(contract_hash),
         package_hash,
     );
@@ -156,6 +160,7 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("wcspr", Key::cl_type()),
             Parameter::new("uniswap_pair", Key::cl_type()),
             Parameter::new("uniswap_router", Key::cl_type()),
+            Parameter::new("transfer_helper", Key::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
         ],
@@ -272,10 +277,12 @@ fn call() {
         let wcspr: Key = runtime::get_named_arg("wcspr");
         let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
+        let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
         let constructor_args = runtime_args! {
             "wcspr" => wcspr,
             "uniswap_pair" => uniswap_pair,
             "uniswap_router" => uniswap_router,
+            "transfer_helper" => transfer_helper,
             "contract_hash" => contract_hash,
             "package_hash" => package_hash,
         };

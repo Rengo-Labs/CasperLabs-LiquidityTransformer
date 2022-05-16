@@ -7,8 +7,8 @@ use crate::error::Error;
 use crate::event::SyntheticTokenEvent;
 use crate::synthetic_helper_crate::SYNTHETICHELPER;
 
-use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+use alloc::{collections::BTreeMap, string::String};
 use casper_contract::{
     contract_api::{runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
@@ -27,6 +27,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         wcspr: Key,
         uniswap_pair: Key,
         uniswap_router: Key,
+        transfer_helper: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
     ) {
@@ -48,6 +49,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         data::set_wcspr(wcspr);
         data::set_contract_hash(contract_hash);
         data::set_package_hash(package_hash);
+        data::set_transfer_helper(transfer_helper);
         set_contract_purse(system::create_purse());
         data::set_master_address_purse(system::create_purse());
     }
@@ -238,7 +240,11 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         from_token_address: Key,
         to_token_address: Key,
     ) -> U256 {
-        let path: Vec<Key> = self._prepare_path(from_token_address, to_token_address);
+        let _path: Vec<Key> = self._prepare_path(from_token_address, to_token_address);
+        let mut path: Vec<String> = Vec::new();
+        for i in _path {
+            path.push(i.to_formatted_string());
+        }
         let mut time: u64 = runtime::get_blocktime().into();
         time += 7200;
         let ret: Vec<U256> = runtime::call_versioned_contract(
@@ -246,11 +252,11 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             None,
             "swap_exact_tokens_for_tokens",
             runtime_args! {
-                "amount" => amount,
+                "amount_in" => amount,
                 "amount_out_min" => amount_out_min,
                 "path" => path,
-                "transfer_helper" => data::get_transfer_helper(),
-                "time" => U256::from(time)
+                "to" => data::get_transfer_helper(),
+                "deadline" => U256::from(time)
             },
         );
         ret[0]
@@ -501,54 +507,54 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             amount_scspr,
         });
 
-        // self._unwrap(amount_wcspr);
-        // self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
-        // self.mint(Key::from(data::get_package_hash()), LIMIT_AMOUNT);
+        self._unwrap(amount_wcspr);
+        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
+        self.mint(Key::from(data::get_package_hash()), LIMIT_AMOUNT);
 
-        // let swap_amount: U256 = self._swap_amount_arbitrage_scspr();
+        let swap_amount: U256 = self._swap_amount_arbitrage_scspr();
 
-        // let () = runtime::call_versioned_contract(
-        //     data::get_wcspr().into_hash().unwrap().into(),
-        //     None,
-        //     "approve",
-        //     runtime_args! {
-        //         "owner" => Key::from(data::get_package_hash()),
-        //         "spender" => data::get_uniswap_router(),
-        //         "amount" => swap_amount
-        //     },
-        // );
+        let () = runtime::call_versioned_contract(
+            data::get_wcspr().into_hash().unwrap().into(),
+            None,
+            "approve",
+            runtime_args! {
+                "owner" => Key::from(data::get_package_hash()),
+                "spender" => data::get_uniswap_router(),
+                "amount" => swap_amount
+            },
+        );
 
-        // let amount_out_received_wcspr: U256 = self._swap_exact_tokens_for_tokens(
-        //     swap_amount,
-        //     0.into(),
-        //     Key::from(data::get_package_hash()),
-        //     data::get_wcspr(),
-        // );
+        let amount_out_received_wcspr: U256 = self._swap_exact_tokens_for_tokens(
+            swap_amount,
+            0.into(),
+            Key::from(data::get_package_hash()),
+            data::get_wcspr(),
+        );
 
-        // let () = runtime::call_versioned_contract(
-        //     data::get_transfer_helper().into_hash().unwrap().into(),
-        //     None,
-        //     "forward_funds",
-        //     runtime_args! {
-        //         "to" => data::get_wcspr(),
-        //         "amount" => amount_out_received_wcspr
-        //     },
-        // );
+        let () = runtime::call_versioned_contract(
+            data::get_transfer_helper().into_hash().unwrap().into(),
+            None,
+            "forward_funds",
+            runtime_args! {
+                "token_address" => data::get_wcspr(),
+                "forward_amount" => amount_out_received_wcspr
+            },
+        );
 
-        // let get_balance_of: U256 = self._get_balance_of(
-        //     Key::from(data::get_package_hash()),
-        //     Key::from(data::get_package_hash()),
-        // );
+        let get_balance_of: U256 = self._get_balance_of(
+            Key::from(data::get_package_hash()),
+            Key::from(data::get_package_hash()),
+        );
 
-        // self._add_liquidity(amount_out_received_wcspr, get_balance_of);
+        self._add_liquidity(amount_out_received_wcspr, get_balance_of);
 
-        // self._self_burn();
+        self._self_burn();
 
-        // let master_address: Key = data::get_master_address();
-        // self.synthetic_token_emit(&SyntheticTokenEvent::SendArbitrageProfitToMaster {
-        //     amount_wcspr,
-        //     master_address,
-        // });
+        let master_address: Key = data::get_master_address();
+        self.synthetic_token_emit(&SyntheticTokenEvent::SendArbitrageProfitToMaster {
+            amount_wcspr,
+            master_address,
+        });
     }
 
     fn _arbitrage_cspr(&mut self, wrapped_balance: U256, synthetic_balance: U256) {

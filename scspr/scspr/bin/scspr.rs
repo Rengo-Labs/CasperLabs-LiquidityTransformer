@@ -43,6 +43,7 @@ impl Scspr {
         uniswap_router: Key,
         uniswap_factory: Key,
         synthetic_token: Key,
+        transfer_helper: Key,
         contract_hash: ContractHash,
         package_hash: ContractPackageHash,
     ) {
@@ -51,6 +52,7 @@ impl Scspr {
             wcspr,
             uniswap_pair,
             uniswap_router,
+            transfer_helper,
             Key::from(contract_hash),
             package_hash,
         );
@@ -71,6 +73,7 @@ fn constructor() {
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
     let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
+    let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
     Scspr::default().constructor(
@@ -79,6 +82,7 @@ fn constructor() {
         uniswap_router,
         uniswap_factory,
         synthetic_token,
+        transfer_helper,
         contract_hash,
         package_hash,
     );
@@ -209,6 +213,7 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("uniswap_factory", Key::cl_type()),
             Parameter::new("synthetic_token", Key::cl_type()),
+            Parameter::new("transfer_helper", Key::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
         ],
@@ -374,12 +379,14 @@ fn call() {
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
         let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
+        let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
         let constructor_args = runtime_args! {
             "wcspr" => wcspr,
             "uniswap_pair" => uniswap_pair,
             "uniswap_router" => uniswap_router,
             "uniswap_factory" => uniswap_factory,
             "synthetic_token" => synthetic_token,
+            "transfer_helper" => transfer_helper,
             "contract_hash" => contract_hash,
             "package_hash"=> package_hash
         };
