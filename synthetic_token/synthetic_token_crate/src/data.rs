@@ -134,15 +134,17 @@ pub fn get_master_address() -> Key {
     get_key(MASTER_ADDRESS).unwrap_or(zero_address())
 }
 
-pub fn set_master_address_purse(master_address_purse: URef) {
-    set_key(MASTER_ADDRESS_PURSE, master_address_purse);
+pub fn set_master_address_purse(purse: URef) {
+    runtime::put_key(&MASTER_ADDRESS_PURSE, purse.into());
 }
 
 pub fn get_master_address_purse() -> URef {
-    get_key(MASTER_ADDRESS_PURSE).unwrap_or({
-        set_master_address_purse(system::create_purse());
-        get_key(MASTER_ADDRESS_PURSE).unwrap_or_default()
-    })
+    let destination_purse_key = runtime::get_key(&MASTER_ADDRESS_PURSE).unwrap_or_revert();
+
+    match destination_purse_key.as_uref() {
+        Some(uref) => *uref,
+        None => runtime::revert(ApiError::User(20)),
+    }
 }
 
 pub fn set_contract_hash(contract_hash: Key) {

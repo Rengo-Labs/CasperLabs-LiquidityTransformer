@@ -120,4 +120,4 @@ full-test:
 	make all && make test
 
 dev:
-	make all && make test-synthetic-token
+	make all && make test-liquidity-transformer

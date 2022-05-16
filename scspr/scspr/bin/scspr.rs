@@ -112,19 +112,6 @@ fn withdraw() {
 }
 
 #[no_mangle]
-fn settle_cpsr() {
-    let amount_withdraw: U256 = runtime::get_named_arg("amount_withdraw");
-    let succesor_purse: URef = runtime::get_named_arg("succesor_purse");
-    Scspr::default()._settle_cspr(amount_withdraw, succesor_purse);
-}
-
-#[no_mangle]
-fn settle_scspr() {
-    let amount_withdraw: U256 = runtime::get_named_arg("amount_withdraw");
-    Scspr::default()._settle_scspr(amount_withdraw);
-}
-
-#[no_mangle]
 fn liquidity_deposit() {
     let msg_value: U256 = runtime::get_named_arg("msg_value");
     Scspr::default().liquidity_deposit(msg_value);
@@ -259,23 +246,6 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("msg_value", U256::cl_type()),
             Parameter::new("succesor_purse", URef::cl_type()),
         ],
-        <()>::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-    entry_points.add_entry_point(EntryPoint::new(
-        "settle_cpsr",
-        vec![
-            Parameter::new("amount_withdraw", U256::cl_type()),
-            Parameter::new("succesor_purse", URef::cl_type()),
-        ],
-        <()>::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-    entry_points.add_entry_point(EntryPoint::new(
-        "settle_scspr",
-        vec![Parameter::new("amount_withdraw", U256::cl_type())],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
