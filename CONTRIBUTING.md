@@ -1,10 +1,10 @@
-# Contributing to DragonLair - Casper Blockchain
+# Contributing to Liquidity Transformer - Casper Blockchain
 
 The following is a set of rules and guidelines for contributing to this repo. Please feel free to propose changes to this document in a pull request.
 
 ## Submitting issues
 
-If you have questions about how to use DragonLair, please direct these to the related discord channels and do not file an issue:
+If you have questions about how to use Liquidity Transformer, please direct these to the related discord channels and do not file an issue:
 * [#validators-general](https://discord.gg/9CTHRvvA4d)
 * [#node-tech-support](https://discord.gg/9CTHRvvA4d)
 
@@ -16,7 +16,7 @@ If you have feature enhancements or other requests, please feel free to file iss
   - You can also filter by appending e. g. "state:open" to the search string.
   - More info on [search syntax within GitHub](https://help.github.com/articles/searching-issues)
 
-## Contributing to DragonLair - Casper Blockchain
+## Contributing to Liquidity Transformer - Casper Blockchain
 
 All contributions to this repository from September 9, 2021 on are considered to be licensed under GNU License.
 
