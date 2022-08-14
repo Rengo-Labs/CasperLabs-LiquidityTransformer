@@ -90,6 +90,7 @@ impl LiquidityTransformerEvent {
 }
 
 pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storage> {
+    #[allow(clippy::too_many_arguments)]
     fn init(
         &self,
         wise_token: Key,
@@ -129,7 +130,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
     fn after_uniswap_transfer(&self) {
         let ret: bool = data::Globals::instance().get("uniswap_swaped");
-        if ret != true {
+        if !ret {
             runtime::revert(ApiError::from(Error::ForwardLiquidityFirst));
         }
     }
@@ -142,7 +143,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn below_maximum_day(&self) {
-        if self.current_stakeable_day() <= 0
+        if self.current_stakeable_day() == 0
             || self.current_stakeable_day() > data::INVESTMENT_DAYS as u64
         {
             runtime::revert(ApiError::from(Error::ReserveWrongInvestmentDay));
@@ -350,7 +351,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         let mut token_amount: U256 = sender_value
             .checked_div(data::TOKEN_COST.into())
             .unwrap_or_revert()
-            .checked_mul(U256::from(1_000_000_000 as u128))
+            .checked_mul(U256::from(1_000_000_000_u128))
             .unwrap_or_revert();
 
         let new_supply: U256 = total_transfer_tokens
@@ -379,7 +380,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         self.after_investment_days();
 
         let ret: bool = data::Globals::instance().get("uniswap_swaped");
-        if ret != false {
+        if ret {
             runtime::revert(ApiError::from(Error::Swapped));
         }
 
@@ -501,10 +502,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn prepare_path(&self, token_address: Key) -> Vec<Key> {
-        let mut path: Vec<Key> = Vec::new();
-        path.push(token_address);
-        path.push(data::wcspr());
-        path
+        vec![token_address, data::wcspr()]
     }
 
     fn current_stakeable_day(&self) -> u64 {
@@ -522,7 +520,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         ));
 
         let ret: bool = data::Globals::instance().get("uniswap_swaped");
-        if ret != false
+        if ret
             || InvestorBalance::instance().get(&caller_address_hash) <= U256::from(0)
             || PurchasedTokens::instance().get(&caller_address_hash) <= U256::from(0)
             || self.current_stakeable_day() <= (data::INVESTMENT_DAYS + 10) as u64
@@ -561,7 +559,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     fn emit(&mut self, liquidity_transformer_event: &LiquidityTransformerEvent) {
         let mut events = Vec::new();
         let tmp = data::package().to_formatted_string();
-        let tmp: Vec<&str> = tmp.split("-").collect();
+        let tmp: Vec<&str> = tmp.split('-').collect();
         let package_hash = tmp[1].to_string();
         match liquidity_transformer_event {
             LiquidityTransformerEvent::WiseReservation {

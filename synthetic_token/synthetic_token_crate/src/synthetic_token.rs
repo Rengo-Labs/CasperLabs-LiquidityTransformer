@@ -71,33 +71,28 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .checked_mul(PRECISION_POINTS_POWER4)
             .unwrap_or_revert()
             .checked_div(current_evaluation)
-            .ok_or(ApiError::from(Error::Div1))
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(Error::Div1);
 
         let recipient_amount = self
             ._get_synthetic_balance()
             .checked_mul(PRECISION_POINTS_POWER2)
             .unwrap_or_revert()
             .checked_div(self._get_wrapped_balance())
-            .ok_or(ApiError::from(Error::Div2))
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(Error::Div2);
 
         let difference = PRECISION_POINTS_POWER2
             .checked_sub(ratio_amount.integer_sqrt())
-            .ok_or(ApiError::from(Error::Sub1))
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(ApiError::from(Error::Sub1))
             .checked_mul(recipient_amount.integer_sqrt())
             .unwrap_or_revert()
             .checked_mul(self._get_lp_token_balance())
             .unwrap_or_revert()
             .checked_div(self._get_liquidity_percent())
-            .ok_or(ApiError::from(Error::Div3))
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::from(Error::Div3));
 
         difference
             .checked_div(PRECISION_POINTS)
-            .ok_or(ApiError::from(Error::Div4))
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(ApiError::from(Error::Div4))
     }
 
     fn get_amount_payout(&mut self, amount: U256) -> U256 {
@@ -115,13 +110,11 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .checked_mul(self._get_lp_token_balance())
             .unwrap_or_revert()
             .checked_div(self._get_wrapped_balance())
-            .ok_or(ApiError::from(Error::Div6))
-            .unwrap_or_revert();
+            .unwrap_or_revert_with(ApiError::from(Error::Div6));
 
         quotient
             .checked_div(PRECISION_POINTS_POWER3)
-            .ok_or(ApiError::from(Error::Div7))
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Error::Div7)
     }
 
     fn get_wrapped_balance(&mut self) -> U256 {
@@ -159,8 +152,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .checked_mul(self._get_synthetic_balance())
             .unwrap_or_revert()
             .checked_div(liquidity_percent_squared)
-            .ok_or(ApiError::from(Error::Div8))
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Error::Div8)
     }
 
     fn get_pair_balances(&mut self) -> (U256, U256) {
@@ -193,8 +185,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .checked_mul(PRECISION_POINTS_POWER2)
             .unwrap_or_revert()
             .checked_div(self._get_lp_token_balance())
-            .ok_or(ApiError::from(Error::Div5))
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Error::Div5)
     }
 
     fn _fees_decision(&mut self) {
@@ -633,7 +624,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     fn synthetic_token_emit(&mut self, synthetic_token_event: &SyntheticTokenEvent) {
         let mut events = Vec::new();
         let tmp = data::get_package_hash().to_formatted_string();
-        let tmp: Vec<&str> = tmp.split("-").collect();
+        let tmp: Vec<&str> = tmp.split('-').collect();
         let package_hash = tmp[1].to_string();
         match synthetic_token_event {
             SyntheticTokenEvent::LiquidityRemoved {

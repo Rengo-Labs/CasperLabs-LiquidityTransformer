@@ -1,6 +1,4 @@
-use casper_types::{
-    account::AccountHash, runtime_args, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
-};
+use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
 use test_env::{TestContract, TestEnv};
 
 use crate::scspr_instance::SCSPRInstance;
@@ -115,7 +113,7 @@ pub fn deploy_form_liquidity_purse_proxy(
     )
 }
 
-fn deploy_liquidity_transformer(
+pub fn deploy_liquidity_transformer(
     env: &TestEnv,
     owner: AccountHash,
     wise: &TestContract,
@@ -140,11 +138,11 @@ fn deploy_liquidity_transformer(
     )
 }
 
-fn deploy_erc20(env: &TestEnv, owner: AccountHash) -> TestContract {
+pub fn deploy_erc20(env: &TestEnv, owner: AccountHash) -> TestContract {
     let decimals: u8 = 18;
     let initial_supply: U256 = 0.into();
     TestContract::new(
-        &env,
+        env,
         "erc20-token.wasm",
         "erc20",
         owner,
@@ -158,9 +156,9 @@ fn deploy_erc20(env: &TestEnv, owner: AccountHash) -> TestContract {
     )
 }
 
-fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
+pub fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "factory.wasm",
         "factory",
         owner,
@@ -171,10 +169,10 @@ fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
     )
 }
 
-fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
+pub fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
     let decimals: u8 = 18;
     TestContract::new(
-        &env,
+        env,
         "wcspr-token.wasm",
         "wcspr",
         owner,
@@ -187,14 +185,14 @@ fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
     )
 }
 
-fn deploy_flash_swapper(
+pub fn deploy_flash_swapper(
     env: &TestEnv,
     owner: AccountHash,
     wcspr: &TestContract,
     uniswap_factory: &TestContract,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "flashswapper-token.wasm",
         "flash_swapper",
         owner,
@@ -207,7 +205,7 @@ fn deploy_flash_swapper(
     )
 }
 
-fn deploy_uniswap_pair(
+pub fn deploy_uniswap_pair(
     env: &TestEnv,
     owner: AccountHash,
     flash_swapper: &TestContract,
@@ -216,14 +214,14 @@ fn deploy_uniswap_pair(
     let flash_swapper_package_hash: Key =
         flash_swapper.query_named_key("contract_package_hash".to_string());
     TestContract::new(
-        &env,
+        env,
         "pair-token.wasm",
         "Pair",
         owner,
         runtime_args! {
             "name" => "pair",
             "symbol" => "PAIR",
-            "decimals" => 18 as u8,
+            "decimals" => 18_u8,
             "initial_supply" => U256::from(0),
             "callee_package_hash" => flash_swapper_package_hash,
             "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
@@ -232,9 +230,9 @@ fn deploy_uniswap_pair(
     )
 }
 
-fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
+pub fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "uniswap-v2-library.wasm",
         "library",
         owner,
@@ -243,7 +241,7 @@ fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
     )
 }
 
-fn deploy_uniswap_router(
+pub fn deploy_uniswap_router(
     env: &TestEnv,
     owner: AccountHash,
     uniswap_factory: &TestContract,
@@ -251,7 +249,7 @@ fn deploy_uniswap_router(
     uniswap_library: &TestContract,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "uniswap-v2-router.wasm",
         "uniswap-v2-router",
         owner,
@@ -264,7 +262,7 @@ fn deploy_uniswap_router(
     )
 }
 
-fn deploy_synthetic_token(
+pub fn deploy_synthetic_token(
     env: &TestEnv,
     owner: AccountHash,
     wcspr: &TestContract,
@@ -273,7 +271,7 @@ fn deploy_synthetic_token(
     erc20: Key,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "synthetic_token.wasm",
         "synthetic_token",
         owner,
@@ -287,9 +285,13 @@ fn deploy_synthetic_token(
     )
 }
 
-fn deploy_transfer_helper(env: &TestEnv, owner: AccountHash, scspr: &TestContract) -> TestContract {
+pub fn deploy_transfer_helper(
+    env: &TestEnv,
+    owner: AccountHash,
+    scspr: &TestContract,
+) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "transfer_helper.wasm",
         "transfer_helper",
         owner,
@@ -300,9 +302,9 @@ fn deploy_transfer_helper(env: &TestEnv, owner: AccountHash, scspr: &TestContrac
     )
 }
 
-fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
+pub fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "liquidity_guard.wasm",
         "liquidity_guard",
         owner,
@@ -311,7 +313,8 @@ fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash) -> TestContract {
     )
 }
 
-fn deploy_wise_token(
+#[allow(clippy::too_many_arguments)]
+pub fn deploy_wise_token(
     env: &TestEnv,
     owner: AccountHash,
     scspr: &TestContract,
@@ -323,7 +326,7 @@ fn deploy_wise_token(
     erc20: &TestContract,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "stakeabletoken.wasm",
         "wisetoken",
         owner,
@@ -341,7 +344,8 @@ fn deploy_wise_token(
     )
 }
 
-fn deploy() -> (
+#[allow(clippy::type_complexity)]
+pub fn deploy() -> (
     TestEnv,
     TestContract,
     TestContract,

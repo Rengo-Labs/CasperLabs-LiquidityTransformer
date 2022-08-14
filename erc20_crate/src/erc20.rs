@@ -64,6 +64,7 @@ impl From<Error> for ApiError {
 }
 
 pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
+    #[allow(clippy::too_many_arguments)]
     fn init(
         &mut self,
         name: String,
@@ -85,7 +86,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
         data::set_package_hash(package_hash);
         Nonces::init();
         let nonces = Nonces::instance();
-        nonces.set(&Key::from(self.get_caller()), U256::from(0));
+        nonces.set(&self.get_caller(), U256::from(0));
         Allowances::init();
         Balances::init();
     }
@@ -109,8 +110,8 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
     fn _approve(&mut self, owner: Key, spender: Key, amount: U256) {
         Allowances::instance().set(&owner, &spender, amount);
         self.emit(&ERC20Event::Approval {
-            owner: owner,
-            spender: spender,
+            owner,
+            spender,
             value: amount,
         });
     }
@@ -131,9 +132,9 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
 
         if owner != spender {
             self._approve(owner, spender, new_allowance);
-            return Ok(());
+            Ok(())
         } else {
-            return Err(4);
+            Err(4)
         }
     }
 
@@ -151,9 +152,9 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
 
         if new_allowance >= 0.into() && new_allowance < spender_allowance && owner != spender {
             self._approve(owner, spender, new_allowance);
-            return Ok(());
+            Ok(())
         } else {
-            return Err(4);
+            Err(4)
         }
     }
 
@@ -206,7 +207,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
         let mut public_counter: usize = 0;
         while public_counter < 32 {
             public_key_vec.push(public_key_string[public_counter].parse::<u8>().unwrap());
-            public_counter = public_counter + 1;
+            public_counter += 1;
         }
         let signature_without_spaces: String = signature.split_whitespace().collect();
         let signature_string: Vec<&str> = signature_without_spaces.split(',').collect();
@@ -214,12 +215,12 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
         let mut signature_counter: usize = 0;
         while signature_counter < 64 {
             signature_vec.push(signature_string[signature_counter].parse::<u8>().unwrap());
-            signature_counter = signature_counter + 1;
+            signature_counter += 1;
         }
         let result: bool = ed25519::verify(&digest, &public_key_vec, &signature_vec);
         let verify_key: String = format!("{}{}", "VERIFY", owner);
         set_key(&verify_key, result);
-        return result;
+        result
     }
 
     /// This function is to get meta transaction signer and verify if it is equal
@@ -251,7 +252,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
     ) {
         let domain_separator: String = data::get_domain_separator();
         let permit_type_hash: String = data::get_permit_type_hash();
-        let nonce: U256 = self.nonce(Key::from(self.get_caller()));
+        let nonce: U256 = self.nonce(self.get_caller());
         let deadline_into_blocktime: BlockTime = BlockTime::new(deadline * 1000);
         let blocktime: BlockTime = runtime::get_blocktime();
         if deadline_into_blocktime >= blocktime {
@@ -266,15 +267,14 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
             let digest_string: String = hex::encode(digest);
             let digest_key: String = format!("{}{}", "digest_", owner);
             set_key(&digest_key, digest_string);
-            self.set_nonce(Key::from(self.get_caller()));
-            let result: bool =
-                self.ecrecover(public_key, signature, digest, Key::from(self.get_caller()));
-            if result == true {
+            self.set_nonce(self.get_caller());
+            let result: bool = self.ecrecover(public_key, signature, digest, self.get_caller());
+            if result {
                 Allowances::instance().set(&owner, &spender, value);
                 self.emit(&ERC20Event::Approval {
-                    owner: owner,
-                    spender: spender,
-                    value: value,
+                    owner,
+                    spender,
+                    value,
                 });
             } else {
                 //signature verification failed

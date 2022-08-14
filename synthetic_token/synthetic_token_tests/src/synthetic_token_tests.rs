@@ -1,6 +1,4 @@
-use casper_types::{
-    account::AccountHash, runtime_args, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
-};
+use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
 use test_env::{TestContract, TestEnv};
 
 use crate::synthetic_token_instance::SYNTHETICTOKENInstance;
@@ -28,7 +26,7 @@ pub fn deploy_fund_contract_purse_proxy(
 
 fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "factory.wasm",
         "factory",
         owner,
@@ -42,7 +40,7 @@ fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
 fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
     let decimals: u8 = 18;
     TestContract::new(
-        &env,
+        env,
         "wcspr-token.wasm",
         "wcspr",
         owner,
@@ -62,7 +60,7 @@ fn deploy_flash_swapper(
     uniswap_factory: &TestContract,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "flashswapper-token.wasm",
         "flash_swapper",
         owner,
@@ -84,14 +82,14 @@ fn deploy_uniswap_pair(
     let flash_swapper_package_hash: Key =
         flash_swapper.query_named_key("contract_package_hash".to_string());
     TestContract::new(
-        &env,
+        env,
         "pair-token.wasm",
         "Pair",
         owner,
         runtime_args! {
             "name" => "pair",
             "symbol" => "PAIR",
-            "decimals" => 18 as u8,
+            "decimals" => 18_u8,
             "initial_supply" => U256::from(0),
             "callee_package_hash" => flash_swapper_package_hash,
             "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
@@ -102,7 +100,7 @@ fn deploy_uniswap_pair(
 
 fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "uniswap-v2-library.wasm",
         "library",
         owner,
@@ -119,7 +117,7 @@ fn deploy_uniswap_router(
     uniswap_library: &TestContract,
 ) -> TestContract {
     TestContract::new(
-        &env,
+        env,
         "uniswap-v2-router.wasm",
         "uniswap-v2-router",
         owner,
@@ -222,7 +220,7 @@ fn test_get_amount_payout() {
         env.next_user(),
         Key::Hash(synthetic_token.package_hash()),
         "fund_contract",
-        U512::from(10000 as u128),
+        U512::from(10000_u128),
     );
     uniswap_pair.call_contract(
         owner,
@@ -247,21 +245,21 @@ fn test_get_amount_payout() {
 
 #[test]
 fn test_get_wrapped_balance() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
+    let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
+    let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
     instance.get_wrapped_balance(owner);
 }
 
 #[test]
 fn test_get_synthetic_balance() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
+    let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
+    let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
     instance.get_synthetic_balance(owner);
 }
 
 #[test]
 fn test_get_evaluation() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
+    let (_, owner, synthetic_token, _, _, _, _, _, uniswap_pair) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
     uniswap_pair.call_contract(
         owner,
@@ -277,21 +275,21 @@ fn test_get_evaluation() {
 
 #[test]
 fn test_get_pair_balances() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
+    let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
+    let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
     instance.get_pair_balances(owner);
 }
 
 #[test]
 fn test_get_lp_token_balance() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
+    let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
+    let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
     instance.get_lp_token_balance(owner);
 }
 
 #[test]
 fn test_get_liquidity_percent() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
+    let (_, owner, synthetic_token, _, _, _, _, _, uniswap_pair) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
     uniswap_pair.call_contract(
         owner,

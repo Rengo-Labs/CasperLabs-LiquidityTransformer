@@ -26,11 +26,11 @@ pub const PRECISION_FEES_PROD: U256 = U256([997493734335680000, 0, 0, 0]); // TR
 pub const SELF_PURSE: &str = "self_purse";
 
 pub fn set_contract_purse(purse: URef) {
-    runtime::put_key(&SELF_PURSE, purse.into());
+    runtime::put_key(SELF_PURSE, purse.into());
 }
 
 pub fn get_contract_purse() -> URef {
-    let destination_purse_key = runtime::get_key(&SELF_PURSE).unwrap_or_revert();
+    let destination_purse_key = runtime::get_key(SELF_PURSE).unwrap_or_revert();
 
     match destination_purse_key.as_uref() {
         Some(uref) => *uref,

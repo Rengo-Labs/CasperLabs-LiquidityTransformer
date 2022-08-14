@@ -74,18 +74,18 @@ pub trait SCSPR<Storage: ContractStorage>:
 
     fn receive(&mut self, msg_value: U256, succesor_purse: URef) {
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
-        if is_allow_deposit != true {
+        if !is_allow_deposit {
             runtime::revert(ApiError::from(Error::DepositDisabled));
         }
         let is_bypass_enabled: bool = synthetic_token_data::get_bypass_enabled();
-        if is_bypass_enabled != false {
+        if is_bypass_enabled {
             self.deposit(msg_value, succesor_purse);
         }
     }
 
     fn deposit(&mut self, msg_value: U256, succesor_purse: URef) {
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
-        if is_allow_deposit != true {
+        if !is_allow_deposit {
             runtime::revert(ApiError::from(Error::InvalidDeposit));
         }
         let deposit_amount: U256 = msg_value;
@@ -179,7 +179,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn liquidity_deposit(&mut self, msg_value: U256) {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
-        if is_allow_deposit != false {
+        if is_allow_deposit {
             runtime::revert(ApiError::from(Error::InvalidDeposit));
         }
         self.mint(self.get_caller(), msg_value);
@@ -192,7 +192,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn form_liquidity(&mut self, _pair: Option<Key>, purse: URef) -> U256 {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
-        if is_allow_deposit != false {
+        if is_allow_deposit {
             runtime::revert(ApiError::from(Error::InvalidState));
         }
         synthetic_token_data::set_allow_deposit(true);
@@ -284,7 +284,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn renounce_ownership(&mut self) {
         self.only_master();
         let zero_addr: Key = Key::from_formatted_str(
-            "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
+            "hash-0000000000000000000000000000000000000000000000000000000000000000",
         )
         .unwrap();
 
@@ -300,7 +300,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn define_token(&mut self, wise_token: Key) -> Key {
         self.only_master();
         let is_token_defined: bool = synthetic_token_data::get_token_defined();
-        if is_token_defined != false {
+        if is_token_defined {
             runtime::revert(ApiError::from(Error::AlreadyDefined));
         }
 
@@ -323,7 +323,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn define_helper(&mut self, transfer_helper: Key) -> Key {
         self.only_master();
         let is_helper_defined: bool = synthetic_token_data::get_helper_defined();
-        if is_helper_defined != false {
+        if is_helper_defined {
             runtime::revert(ApiError::from(Error::AlreadyDefined));
         }
 
@@ -376,7 +376,7 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn scspr_emit(&mut self, erc20_event: &SCSPREvent) {
         let mut events = Vec::new();
         let tmp = data::get_contract_package_hash().to_formatted_string();
-        let tmp: Vec<&str> = tmp.split("-").collect();
+        let tmp: Vec<&str> = tmp.split('-').collect();
         let package_hash = tmp[1].to_string();
         match erc20_event {
             SCSPREvent::DepositedLiquidity {

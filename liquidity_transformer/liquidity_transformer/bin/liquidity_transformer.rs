@@ -27,6 +27,7 @@ impl ContractContext<OnChainContractStorage> for LiquidityTransformer {
 impl LIQUIDITYTRANSFORMER<OnChainContractStorage> for LiquidityTransformer {}
 
 impl LiquidityTransformer {
+    #[allow(clippy::too_many_arguments)]
     fn constructor(
         &mut self,
         wise_token: Key,

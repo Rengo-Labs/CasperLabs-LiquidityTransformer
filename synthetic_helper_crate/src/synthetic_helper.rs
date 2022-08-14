@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
 use casper_contract::{
     contract_api::{runtime, system},
     unwrap_or_revert::UnwrapOrRevert,
@@ -26,10 +26,7 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
     }
 
     fn _prepare_path(&mut self, token_from: Key, token_to: Key) -> Vec<Key> {
-        let mut path: Vec<Key> = Vec::new();
-        path.push(token_from);
-        path.push(token_to);
-        path
+        vec![token_from, token_to]
     }
 
     fn _get_double_root(&mut self, amount: U256) -> U256 {
@@ -50,7 +47,7 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
             return system::get_purse_balance(data::get_contract_purse()).unwrap_or_revert()
                 - U512::from(amount.as_usize());
         }
-        return U512::from(0);
+        0.into()
     }
 
     fn _get_balance_of(&mut self, token: Key, owner: Key) -> U256 {

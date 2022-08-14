@@ -1,14 +1,21 @@
 # Liquidity Transformer - Casper Blockchain
 
-Implementation of `Synthetic CSPR`, `Synthetic Helper` and `Synthetic Token` Contract for the CasperLabs platform.
+Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `Liquidity Transformer` Contract for the CasperLabs platform.
+
+## NOTE:- Following Repositories are required to place with this project to run it
+
+1. Uniswap core contracts
+2. Uniswap router contracts
+3. Stakeable token wise contracts
 
 ## Steps
 
-There are 5 contracts in this folder
+There are 4 contracts in this folder
 
 1. Synthetic CSPR Contract
 2. Synthetic Helper Contract
 3. Synthetic Token Contract
+4. Liquidity Transformer
 
 ## Table of contents
 
@@ -57,7 +64,6 @@ curl -O https://repo.casperlabs.io/casper-repo-pubkey.asc
 sudo apt-key add casper-repo-pubkey.ascr
 sudo apt update
 # Install the Casper client software
-Install Casper-client
 cargo +nightly install casper-client
 # To check Casper Client Version
 Casper-client --version
@@ -73,10 +79,6 @@ casper-client <command> --help
 casper-client keygen <TARGET DIRECTORY>
 ```
 
-### Usage
-
-To run the Contracts make sure you are in the folder of your required contract.
-
 #### Install
 
 Make sure `wasm32-unknown-unknown` is installed.
@@ -88,7 +90,7 @@ make prepare
 It's also recommended to have [wasm-strip](https://github.com/WebAssembly/wabt)
 available in your PATH to reduce the size of compiled Wasm.
 
-#### Build Individual Smart Contract
+#### Build Smart Contract
 
 Run this command to build Smart Contract.
 
@@ -96,32 +98,36 @@ Run this command to build Smart Contract.
 make build-contract
 ```
 
-<br>**Note:** User needs to be in the desired project folder to build contracts and User needs to run `make build-contract` in every project to make wasms to avoid errors
-
 #### Build All Smart Contracts
 
-Run this command in main folder to build all Smart Contract.
+Run this command in main folder to build all Smart Contracts.
 
 ```
 make all
 ```
 
-#### Individual Test Cases
+#### Run individual Test Cases
 
 Run this command to run Test Cases.
 
 ```
-make test
+make test-<CONTRACT-NAME>
 ```
 
-<br>**Note:** User needs to be in the desired project folder to run test cases
-
-#### All Test Cases
+#### Run all Test Cases
 
 Run this command in main folder to run all contract's Test Cases.
 
 ```
 make test
+```
+
+#### Build & Test all contracts
+
+Run this command in main folder to run all contract's Test Cases.
+
+```
+make test-all
 ```
 
 ### Deploying Liquidity Transformer contract manually

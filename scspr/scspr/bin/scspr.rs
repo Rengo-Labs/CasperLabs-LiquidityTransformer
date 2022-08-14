@@ -2,7 +2,7 @@
 #![no_std]
 
 extern crate alloc;
-use alloc::{boxed::Box, collections::BTreeSet, format, string::ToString, vec};
+use alloc::{boxed::Box, collections::BTreeSet, format, vec};
 use casper_contract::{
     contract_api::{runtime, storage},
     unwrap_or_revert::UnwrapOrRevert,
@@ -36,6 +36,7 @@ impl SYNTHETICHELPER<OnChainContractStorage> for Scspr {}
 impl ERC20<OnChainContractStorage> for Scspr {}
 
 impl Scspr {
+    #[allow(clippy::too_many_arguments)]
     fn constructor(
         &mut self,
         wcspr: Key,

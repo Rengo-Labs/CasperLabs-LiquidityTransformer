@@ -96,7 +96,7 @@ pub extern "C" fn call() {
         ),
         DESTINATION_FORM_LIQUIDITY => {
             let pair: Key = runtime::get_named_arg(PAIR_RUNTIME_ARG);
-            let ret: U256 = runtime::call_versioned_contract(
+            let _ret: U256 = runtime::call_versioned_contract(
                 ContractPackageHash::from(destination_package_hash.into_hash().unwrap()),
                 None,
                 DESTINATION_FORM_LIQUIDITY,

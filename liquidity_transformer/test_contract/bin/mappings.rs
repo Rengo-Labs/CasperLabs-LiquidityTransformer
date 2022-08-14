@@ -1,6 +1,6 @@
 use core::convert::TryInto;
 
-use alloc::{format, string::String};
+use alloc::string::{String, ToString};
 
 use casper_contract::{
     contract_api::{runtime, storage},
@@ -36,17 +36,17 @@ pub fn set_key<T: ToBytes + CLTyped>(name: &str, value: T) {
 }
 
 pub fn self_hash_key() -> String {
-    format!("self_hash")
+    "self_hash".to_string()
 }
 
 pub fn self_package_key() -> String {
-    format!("package_hash")
+    "package_hash".to_string()
 }
 
 pub fn liquidity_transformer_key() -> String {
-    format!("liquidity_transformer")
+    "liquidity_transformer".to_string()
 }
 
 pub fn result_key() -> String {
-    format!("result")
+    "result".to_string()
 }

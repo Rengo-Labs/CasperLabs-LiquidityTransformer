@@ -10,6 +10,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         LIQUIDITYTRANSFORMERInstance(liquidity_transformer)
     }
 
+    #[allow(clippy::new_ret_no_self, clippy::too_many_arguments)]
     pub fn new(
         env: &TestEnv,
         contract_name: &str,

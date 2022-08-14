@@ -69,11 +69,11 @@ impl InvestorBalance {
         Dict::init(INVESTOR_BALANCE)
     }
 
-    pub fn get(&self, key: &String) -> U256 {
+    pub fn get(&self, key: &str) -> U256 {
         self.dict.get(key).unwrap_or_default()
     }
 
-    pub fn set(&self, key: &String, value: U256) {
+    pub fn set(&self, key: &str, value: U256) {
         self.dict.set(key, value);
     }
 }
@@ -127,14 +127,12 @@ impl UniqueInvestors {
 }
 
 pub fn zero_address() -> Key {
-    Key::from_formatted_str(
-        "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
-    )
-    .unwrap()
+    Key::from_formatted_str("hash-0000000000000000000000000000000000000000000000000000000000000000")
+        .unwrap()
 }
 
 pub fn uniswap_router() -> Key {
-    get_key(UNISWAP_ROUTER).unwrap_or(zero_address())
+    get_key(UNISWAP_ROUTER).unwrap_or_else(zero_address)
 }
 
 pub fn set_uniswap_router(uniswap_router: Key) {
@@ -142,7 +140,7 @@ pub fn set_uniswap_router(uniswap_router: Key) {
 }
 
 pub fn wcspr() -> Key {
-    get_key(WCSPR).unwrap_or(zero_address())
+    get_key(WCSPR).unwrap_or_else(zero_address)
 }
 
 pub fn set_wcspr(wcspr: Key) {
@@ -150,7 +148,7 @@ pub fn set_wcspr(wcspr: Key) {
 }
 
 pub fn scspr() -> Key {
-    get_key(SCSPR).unwrap_or(zero_address())
+    get_key(SCSPR).unwrap_or_else(zero_address)
 }
 
 pub fn set_scspr(wcspr: Key) {
@@ -158,7 +156,7 @@ pub fn set_scspr(wcspr: Key) {
 }
 
 pub fn hash() -> Key {
-    get_key(SELF_CONTRACT_HASH).unwrap_or(zero_address())
+    get_key(SELF_CONTRACT_HASH).unwrap_or_else(zero_address)
 }
 
 pub fn set_hash(contract_hash: Key) {
@@ -166,7 +164,7 @@ pub fn set_hash(contract_hash: Key) {
 }
 
 pub fn package() -> Key {
-    get_key(SELF_PACKAGE_HASH).unwrap_or(zero_address())
+    get_key(SELF_PACKAGE_HASH).unwrap_or_else(zero_address)
 }
 
 pub fn set_package(package_hash: Key) {
@@ -174,7 +172,7 @@ pub fn set_package(package_hash: Key) {
 }
 
 pub fn wise() -> Key {
-    get_key(WISE_CONTRACT).unwrap_or(zero_address())
+    get_key(WISE_CONTRACT).unwrap_or_else(zero_address)
 }
 
 pub fn set_wise(hash: Key) {
@@ -182,7 +180,7 @@ pub fn set_wise(hash: Key) {
 }
 
 pub fn uniswap_pair() -> Key {
-    get_key(UNISWAP_PAIR).unwrap_or(zero_address())
+    get_key(UNISWAP_PAIR).unwrap_or_else(zero_address)
 }
 
 pub fn set_uniswap_pair(hash: Key) {
@@ -190,7 +188,7 @@ pub fn set_uniswap_pair(hash: Key) {
 }
 
 pub fn settings_keeper() -> Key {
-    get_key(SETTINGS_KEEPER).unwrap_or(zero_address())
+    get_key(SETTINGS_KEEPER).unwrap_or_else(zero_address)
 }
 
 pub fn set_settings_keeper(hash: Key) {
@@ -198,7 +196,7 @@ pub fn set_settings_keeper(hash: Key) {
 }
 
 pub fn self_purse() -> URef {
-    let destination_purse_key = runtime::get_key(&SELF_PURSE).unwrap_or_revert();
+    let destination_purse_key = runtime::get_key(SELF_PURSE).unwrap_or_revert();
     match destination_purse_key.as_uref() {
         Some(uref) => *uref,
         None => runtime::revert(ApiError::User(12)),
@@ -206,5 +204,5 @@ pub fn self_purse() -> URef {
 }
 
 pub fn set_self_purse(purse: URef) {
-    runtime::put_key(&SELF_PURSE, purse.into());
+    runtime::put_key(SELF_PURSE, purse.into());
 }

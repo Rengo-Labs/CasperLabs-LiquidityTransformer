@@ -27,7 +27,7 @@ wasm_dest_synthetic_token_path = ${liquidity_transformer_directory}/synthetic_to
 prepare:
 	rustup target add wasm32-unknown-unknown
 
-all:
+build-all:
     # Building contracts
 	cd ${erc20_contract} && make build-contract
 	cd ${factory_contract} && make build-contract
@@ -73,7 +73,6 @@ copy-wasm-file:
 	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${liquidity_guard_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
-
     # Scspr
 	cp ${erc20_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${factory_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
@@ -86,7 +85,6 @@ copy-wasm-file:
 	cp ${liquidity_guard_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-
     # Synthetic Token
 	cp ${factory_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 	cp ${wcspr_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
@@ -117,8 +115,18 @@ test-synthetic-token:
 test:
 	make test-liquidity-transformer && make test-scspr && make test-synthetic-token
 
-full-test:
+test-all:
 	make all && make test
 
-dev:
-	make all && make test-liquidity-transformer
+lint: clippy
+	cargo fmt --all
+
+check-lint: clippy
+	cargo fmt --all -- --check
+
+clippy:
+	cargo clippy --all-targets --all -- -D warnings
+
+git-clean:
+	git rm -rf --cached .
+	git add .

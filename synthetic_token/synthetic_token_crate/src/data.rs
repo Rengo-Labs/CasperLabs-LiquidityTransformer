@@ -1,7 +1,4 @@
-use casper_contract::{
-    contract_api::{runtime, system},
-    unwrap_or_revert::UnwrapOrRevert,
-};
+use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
 use casper_types::{ApiError, ContractPackageHash, Key, URef, U256};
 use contract_utils::{get_key, set_key};
 
@@ -32,10 +29,8 @@ pub enum ErrorCodes {
 }
 
 pub fn zero_address() -> Key {
-    Key::from_formatted_str(
-        "hash-0000000000000000000000000000000000000000000000000000000000000000".into(),
-    )
-    .unwrap()
+    Key::from_formatted_str("hash-0000000000000000000000000000000000000000000000000000000000000000")
+        .unwrap()
 }
 
 pub fn set_scspr(scspr: Key) {
@@ -43,7 +38,7 @@ pub fn set_scspr(scspr: Key) {
 }
 
 pub fn scspr() -> Key {
-    get_key(SCSPR).unwrap_or(zero_address())
+    get_key(SCSPR).unwrap_or_else(zero_address)
 }
 
 pub fn set_owner(owner: Key) {
@@ -51,7 +46,7 @@ pub fn set_owner(owner: Key) {
 }
 
 pub fn owner() -> Key {
-    get_key(OWNER).unwrap_or(zero_address())
+    get_key(OWNER).unwrap_or_else(zero_address)
 }
 
 pub fn set_current_evaluation(current_evaluation: U256) {
@@ -99,7 +94,7 @@ pub fn set_wcspr(wcspr: Key) {
 }
 
 pub fn get_wcspr() -> Key {
-    get_key(WCSPR).unwrap_or(zero_address())
+    get_key(WCSPR).unwrap_or_else(zero_address)
 }
 
 pub fn set_uniswap_pair(uniswap_pair: Key) {
@@ -107,7 +102,7 @@ pub fn set_uniswap_pair(uniswap_pair: Key) {
 }
 
 pub fn get_uniswap_pair() -> Key {
-    get_key(UNISWAP_PAIR).unwrap_or(zero_address())
+    get_key(UNISWAP_PAIR).unwrap_or_else(zero_address)
 }
 
 pub fn set_uniswap_router(uniswap_router: Key) {
@@ -115,7 +110,7 @@ pub fn set_uniswap_router(uniswap_router: Key) {
 }
 
 pub fn get_uniswap_router() -> Key {
-    get_key(UNISWAP_ROUTER).unwrap_or(zero_address())
+    get_key(UNISWAP_ROUTER).unwrap_or_else(zero_address)
 }
 
 pub fn set_transfer_helper(transfer_helper: Key) {
@@ -123,7 +118,7 @@ pub fn set_transfer_helper(transfer_helper: Key) {
 }
 
 pub fn get_transfer_helper() -> Key {
-    get_key(TRANSFER_HELPER).unwrap_or(zero_address())
+    get_key(TRANSFER_HELPER).unwrap_or_else(zero_address)
 }
 
 pub fn set_master_address(master_address: Key) {
@@ -131,15 +126,15 @@ pub fn set_master_address(master_address: Key) {
 }
 
 pub fn get_master_address() -> Key {
-    get_key(MASTER_ADDRESS).unwrap_or(zero_address())
+    get_key(MASTER_ADDRESS).unwrap_or_else(zero_address)
 }
 
 pub fn set_master_address_purse(purse: URef) {
-    runtime::put_key(&MASTER_ADDRESS_PURSE, purse.into());
+    runtime::put_key(MASTER_ADDRESS_PURSE, purse.into());
 }
 
 pub fn get_master_address_purse() -> URef {
-    let destination_purse_key = runtime::get_key(&MASTER_ADDRESS_PURSE).unwrap_or_revert();
+    let destination_purse_key = runtime::get_key(MASTER_ADDRESS_PURSE).unwrap_or_revert();
 
     match destination_purse_key.as_uref() {
         Some(uref) => *uref,
@@ -152,7 +147,7 @@ pub fn set_contract_hash(contract_hash: Key) {
 }
 
 pub fn get_contract_hash() -> Key {
-    get_key(SELF_CONTRACT_HASH).unwrap_or(zero_address())
+    get_key(SELF_CONTRACT_HASH).unwrap_or_else(zero_address)
 }
 
 pub fn set_package_hash(package_hash: ContractPackageHash) {

@@ -1,6 +1,6 @@
 use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, ContractPackageHash, Key,
-    RuntimeArgs, URef, U256,
+    RuntimeArgs, U256,
 };
 use test_env::{TestContract, TestEnv};
 
@@ -11,6 +11,7 @@ impl SYNTHETICTOKENInstance {
         SYNTHETICTOKENInstance(scspr)
     }
 
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(
         env: &TestEnv,
         contract_name: &str,
