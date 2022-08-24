@@ -7,7 +7,7 @@ members = [
   "scspr/scspr",
   "scspr/scspr_crate",
   "scspr/scspr_tests",
-  "scspr/test_contract",
+  "scspr/session_code",
   # LIQUIDITY TRANSFORMER
   "liquidity_transformer/liquidity_transformer",
   "liquidity_transformer/liquidity_transformer_crate",

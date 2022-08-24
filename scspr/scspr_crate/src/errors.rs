@@ -11,6 +11,7 @@ pub enum Error {
     AlreadyDefined = 71,
     DepositDisabled = 72,
     NotOwner = 73,
+    AmountToTransferIsZero = 74,
 }
 
 impl From<Error> for ApiError {

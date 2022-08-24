@@ -27,7 +27,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         wcspr: Key,
         uniswap_pair: Key,
         uniswap_router: Key,
-        transfer_helper: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
     ) {
@@ -49,7 +48,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         data::set_wcspr(wcspr);
         data::set_contract_hash(contract_hash);
         data::set_package_hash(package_hash);
-        data::set_transfer_helper(transfer_helper);
         set_contract_purse(system::create_purse());
         data::set_master_address_purse(system::create_purse());
     }

@@ -1,5 +1,5 @@
 use casper_types::{
-    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef, U256,
+    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef, U256, U512
 };
 use test_env::{TestContract, TestEnv};
 
@@ -32,6 +32,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "wcspr" => wcspr,
+                "amount" => U512::from(0)
             },
             0,
         )

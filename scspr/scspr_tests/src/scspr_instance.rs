@@ -1,6 +1,6 @@
 use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, ContractPackageHash, Key,
-    RuntimeArgs, URef, U256,
+    RuntimeArgs, URef, U256, U512
 };
 use test_env::{TestContract, TestEnv};
 
@@ -20,7 +20,7 @@ impl SCSPRInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         uniswap_factory: Key,
-        synthetic_token: Key,
+        amount: U512
     ) -> TestContract {
         TestContract::new(
             env,
@@ -32,7 +32,7 @@ impl SCSPRInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "uniswap_factory" => uniswap_factory,
-                "synthetic_token" => synthetic_token
+                "amount" => amount
             },
             0,
         )

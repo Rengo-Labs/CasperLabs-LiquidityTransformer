@@ -13,6 +13,7 @@ use casper_contract::{
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
 use contract_utils::{ContractContext, ContractStorage};
 use renvm_sig::keccak256;
+use num_traits::cast::AsPrimitive;
 
 use crate::data::{self, *};
 
@@ -176,6 +177,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         if msg_value < U256::from(data::TOKEN_COST) {
             runtime::revert(ApiError::from(Error::ReserveWiseMinInvest));
         }
+        // Payable
+        let amount: U512 = U512::from(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value));
+        system::transfer_from_purse_to_purse(caller_purse, data::self_purse(), amount, None).unwrap_or_revert();
         self._reserve_wise(self.get_caller(), msg_value, investment_mode, caller_purse);
     }
 
@@ -378,12 +382,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
     fn forward_liquidity(&mut self, purse: URef) {
         self.after_investment_days();
-
         let ret: bool = data::Globals::instance().get("uniswap_swaped");
         if ret {
             runtime::revert(ApiError::from(Error::Swapped));
         }
-
         let scspr_tokens_amount: U256 = data::Globals::instance().get("total_cspr_contributed");
         let wise_tokens_amount: U256 = data::Globals::instance().get("total_transfer_tokens");
         let value: U256 = data::Globals::instance().get("total_cspr_contributed");
@@ -392,6 +394,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "liquidity_deposit",
             runtime_args! {
+                "purse" => data::self_purse(),
                 "msg_value" => value
             },
         );
@@ -554,6 +557,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         }
 
         (amount, tokens)
+    }
+
+    fn fund_contract(&mut self, purse: URef, amount: U512) {
+        system::transfer_from_purse_to_purse(purse, data::self_purse(), amount, None).unwrap_or_revert();
     }
 
     fn emit(&mut self, liquidity_transformer_event: &LiquidityTransformerEvent) {

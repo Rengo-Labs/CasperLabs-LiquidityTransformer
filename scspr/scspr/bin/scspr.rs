@@ -4,7 +4,7 @@
 extern crate alloc;
 use alloc::{boxed::Box, collections::BTreeSet, format, vec};
 use casper_contract::{
-    contract_api::{runtime, storage},
+    contract_api::{runtime, storage, account, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
@@ -12,7 +12,7 @@ use casper_types::{
     EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
     U512,
 };
-use contract_utils::{ContractContext, OnChainContractStorage};
+use contract_utils::{ContractContext, OnChainContractStorage, set_key};
 use scspr_crate::{
     self,
     synthetic_token_crate::{
@@ -20,6 +20,8 @@ use scspr_crate::{
     },
     SCSPR,
 };
+
+const JS_RESULT:&str = "result";
 
 #[derive(Default)]
 struct Scspr(OnChainContractStorage);
@@ -43,26 +45,24 @@ impl Scspr {
         uniswap_pair: Key,
         uniswap_router: Key,
         uniswap_factory: Key,
-        synthetic_token: Key,
-        transfer_helper: Key,
         contract_hash: ContractHash,
         package_hash: ContractPackageHash,
+        purse: URef
     ) {
         SYNTHETICTOKEN::init(
             self,
             wcspr,
             uniswap_pair,
             uniswap_router,
-            transfer_helper,
             Key::from(contract_hash),
             package_hash,
         );
         SCSPR::init(
             self,
             uniswap_factory,
-            synthetic_token,
             Key::from(contract_hash),
             package_hash,
+            purse
         );
     }
 }
@@ -73,19 +73,17 @@ fn constructor() {
     let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
-    let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
-    let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
     let contract_hash: ContractHash = runtime::get_named_arg("contract_hash");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
+    let purse: URef = runtime::get_named_arg("purse");
     Scspr::default().constructor(
         wcspr,
         uniswap_pair,
         uniswap_router,
         uniswap_factory,
-        synthetic_token,
-        transfer_helper,
         contract_hash,
         package_hash,
+        purse
     );
 }
 
@@ -118,8 +116,9 @@ fn withdraw() {
 
 #[no_mangle]
 fn liquidity_deposit() {
+    let purse: URef = runtime::get_named_arg("purse");
     let msg_value: U256 = runtime::get_named_arg("msg_value");
-    Scspr::default().liquidity_deposit(msg_value);
+    Scspr::default().liquidity_deposit(purse, msg_value);
 }
 
 #[no_mangle]
@@ -140,6 +139,14 @@ fn renounce_ownership() {
 fn forward_ownership() {
     let new_master: Key = runtime::get_named_arg("new_master");
     Scspr::default().forward_ownership(new_master);
+}
+
+#[no_mangle]
+fn add_lp_tokens() {
+    let purse: URef = runtime::get_named_arg("purse");
+    let msg_value: U256 = runtime::get_named_arg("msg_value");
+    let token_amount: U256 = runtime::get_named_arg("token_amount");
+    Scspr::default().add_lp_tokens(purse, msg_value, token_amount);
 }
 
 #[no_mangle]
@@ -204,6 +211,18 @@ fn fund_contract() {
     Scspr::default().fund_contract(purse, amount);
 }
 
+#[no_mangle]
+fn get_synthetic_balance() {
+    let ret: U256 = Scspr::default().get_synthetic_balance();
+    runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn get_synthetic_balance_js_client() {
+    let ret: U256 = Scspr::default().get_synthetic_balance();
+    set_key(JS_RESULT, ret);
+}
+
 fn get_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
@@ -213,10 +232,9 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("uniswap_pair", Key::cl_type()),
             Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("uniswap_factory", Key::cl_type()),
-            Parameter::new("synthetic_token", Key::cl_type()),
-            Parameter::new("transfer_helper", Key::cl_type()),
             Parameter::new("contract_hash", ContractHash::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
+            Parameter::new("purse", URef::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Groups(vec![Group::new("constructor")]),
@@ -258,7 +276,10 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "liquidity_deposit",
-        vec![Parameter::new("msg_value", U256::cl_type())],
+        vec![
+            Parameter::new("purse", URef::cl_type()),
+            Parameter::new("msg_value", U256::cl_type())
+        ],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -283,6 +304,17 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "forward_ownership",
         vec![Parameter::new("new_master", Key::cl_type())],
+        <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "add_lp_tokens",
+        vec![
+            Parameter::new("purse", URef::cl_type()),
+            Parameter::new("msg_value", U256::cl_type()),
+            Parameter::new("token_amount", U256::cl_type()),
+        ],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -359,11 +391,25 @@ fn get_entry_points() -> EntryPoints {
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "get_synthetic_balance",
+        vec![],
+        U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "get_synthetic_balance_js_client",
+        vec![],
+        <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
     entry_points
 }
 
 #[no_mangle]
-fn call() {
+pub extern "C" fn call() {
     // Store contract in the account's named keys. Contract name must be same for all new versions of the contracts
     let contract_name: alloc::string::String = runtime::get_named_arg("contract_name");
 
@@ -375,21 +421,26 @@ fn call() {
         let (contract_hash, _): (ContractHash, _) =
             storage::add_contract_version(package_hash, get_entry_points(), Default::default());
 
+        // Payable
+        let caller_purse = account::get_main_purse();
+        let purse: URef = system::create_purse();
+        let amount: U512 = runtime::get_named_arg("amount");
+        if amount != 0.into() {
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None).unwrap_or_revert();
+        }
+    
         let wcspr: Key = runtime::get_named_arg("wcspr");
         let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let uniswap_factory: Key = runtime::get_named_arg("uniswap_factory");
-        let synthetic_token: Key = runtime::get_named_arg("synthetic_token");
-        let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
         let constructor_args = runtime_args! {
             "wcspr" => wcspr,
             "uniswap_pair" => uniswap_pair,
             "uniswap_router" => uniswap_router,
             "uniswap_factory" => uniswap_factory,
-            "synthetic_token" => synthetic_token,
-            "transfer_helper" => transfer_helper,
             "contract_hash" => contract_hash,
-            "package_hash"=> package_hash
+            "package_hash"=> package_hash,
+            "purse"=> purse
         };
 
         // Add the constructor group to the package hash with a single URef.
