@@ -169,7 +169,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         });
     }
 
-    fn form_liquidity(&mut self, _pair: Option<Key>, purse: URef) -> U256 {
+    fn form_liquidity(&mut self, _pair: Option<Key>) -> U256 {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
         if is_allow_deposit {
@@ -177,7 +177,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         }
         synthetic_token_data::set_allow_deposit(true);
         let cover_amount_: U512 = self._get_balance_half();
-        let cover_amount: U256 = U256::from_str(cover_amount_.to_string().as_str()).unwrap();
+        let cover_amount: U256 = U256::from(<casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(cover_amount_));
         self.mint(Key::from(data::get_contract_package_hash()), cover_amount);
         self._approve(
             Key::from(data::get_contract_package_hash()),
@@ -189,8 +189,8 @@ pub trait SCSPR<Storage: ContractStorage>:
             None,
             "deposit",
             runtime_args! {
-                "purse" => purse,
-                "amount" => cover_amount_ * cover_amount_
+                "purse" => get_contract_purse(),
+                "amount" => cover_amount_
             },
         );
         if ret.is_err() {

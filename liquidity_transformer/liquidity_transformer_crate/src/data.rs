@@ -17,7 +17,7 @@ pub const INVESTMENT_DAYS: u8 = 15;
 pub const MAX_SUPPLY: u128 = 264_000_000_000_000_000; // 264_000_000_000_000_000_000_000_000;
 pub const MAX_INVEST: u128 = 200_000_000_000_000; // 200_000_000_000_000_000_000_000;
 pub const TOKEN_COST: u128 = MAX_INVEST / (MAX_SUPPLY / 1_000_000_000); // MAX_INVEST / (MAX_SUPPLY / 1_000_000_000_000_000_000);
-pub const REFUND_CAP: u128 = 1_000_000_000_000; // 1_000_000_000_000_000_000_000;
+pub const REFUND_CAP: u128 = 100_000_000_000; // 100_000_000_000_000_000_000;
 
 pub const UNIQUE_INVESTORS: &str = "unique_investors";
 pub const PURCHASED_TOKENS: &str = "purchased_tokens";
@@ -30,6 +30,13 @@ pub const SELF_PURSE: &str = "self_purse";
 pub const SETTINGS_KEEPER: &str = "settings_keeper";
 
 pub const GLOBALS: &str = "globals";
+
+pub const CASH_BACK_TOTAL: &str = "cash_back_total";
+pub const INVESTOR_COUNT: &str = "investor_count";
+pub const TOTAL_TRANSFER_TOKENS: &str = "total_transfer_tokens";
+pub const TOTAL_CSPR_CONTRIBUTED: &str = "total_cspr_contributed";
+pub const UNISWAP_SWAPED: &str = "uniswap_swaped";
+
 pub struct Globals {
     dict: Dict,
 }

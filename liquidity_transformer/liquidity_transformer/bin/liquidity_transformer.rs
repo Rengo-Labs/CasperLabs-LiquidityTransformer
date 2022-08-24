@@ -116,9 +116,7 @@ fn reserve_wise_with_token() {
 
 #[no_mangle]
 fn forward_liquidity() {
-    let purse: URef = runtime::get_named_arg("purse");
-
-    LiquidityTransformer::default().forward_liquidity(purse);
+    LiquidityTransformer::default().forward_liquidity();
 }
 
 #[no_mangle]
@@ -225,7 +223,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "forward_liquidity",
-        vec![Parameter::new("purse", URef::cl_type())],
+        vec![],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,

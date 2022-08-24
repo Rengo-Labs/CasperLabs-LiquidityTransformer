@@ -123,10 +123,9 @@ fn liquidity_deposit() {
 
 #[no_mangle]
 fn form_liquidity() {
-    let purse: URef = runtime::get_named_arg("purse");
     let pair: Key = runtime::get_named_arg("pair");
 
-    let ret: U256 = Scspr::default().form_liquidity(Some(pair), purse);
+    let ret: U256 = Scspr::default().form_liquidity(Some(pair));
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
@@ -287,7 +286,6 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "form_liquidity",
         vec![
-            Parameter::new("purse", URef::cl_type()),
             Parameter::new("pair", Key::cl_type()),
         ],
         U256::cl_type(),
@@ -439,8 +437,8 @@ pub extern "C" fn call() {
             "uniswap_router" => uniswap_router,
             "uniswap_factory" => uniswap_factory,
             "contract_hash" => contract_hash,
-            "package_hash"=> package_hash,
-            "purse"=> purse
+            "package_hash" => package_hash,
+            "purse" => purse
         };
 
         // Add the constructor group to the package hash with a single URef.

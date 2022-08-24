@@ -1,7 +1,7 @@
 use core::str::FromStr;
 
 use crate::alloc::string::ToString;
-use crate::data;
+use crate::data::{self, get_uniswap_pair};
 use crate::erc20_crate::ERC20;
 use crate::error::Error;
 use crate::event::SyntheticTokenEvent;
@@ -48,7 +48,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         data::set_wcspr(wcspr);
         data::set_contract_hash(contract_hash);
         data::set_package_hash(package_hash);
-        set_contract_purse(system::create_purse());
         data::set_master_address_purse(system::create_purse());
     }
 
@@ -120,7 +119,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _get_wrapped_balance(&mut self) -> U256 {
-        self._get_balance_of(data::get_uniswap_pair(), data::get_wcspr())
+        self._get_balance_of(data::get_wcspr(), data::get_uniswap_pair())
     }
 
     fn get_synthetic_balance(&mut self) -> U256 {
@@ -151,6 +150,33 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .unwrap_or_revert()
             .checked_div(liquidity_percent_squared)
             .unwrap_or_revert_with(Error::Div8)
+    }
+
+    fn _sqrt_term(&mut self, small_token: U256, big_token: U256) -> U256 {
+        let radiant_term1: U256 = big_token
+            .checked_mul(small_token)
+            .unwrap_or_revert()
+            .checked_mul(TRADING_FEE)
+            .unwrap_or_revert()
+            .checked_mul(4.into())
+            .unwrap_or_revert()
+            .checked_div(PRECISION_POINTS_POWER2)
+            .unwrap_or_revert_with(Error::Div9);
+
+        let radiant_term2: U256 = small_token
+            .checked_mul(small_token)
+            .unwrap_or_revert()
+            .checked_mul(INVERSE_TRADING_FEE)
+            .unwrap_or_revert()
+            .checked_mul(INVERSE_TRADING_FEE)
+            .unwrap_or_revert()
+            .checked_div(PRECISION_POINTS_POWER4)
+            .unwrap_or_revert_with(Error::Div10);
+
+        radiant_term1
+            .checked_add(radiant_term2)
+            .unwrap_or_revert()
+            .integer_sqrt()
     }
 
     fn get_pair_balances(&mut self) -> (U256, U256) {
@@ -190,9 +216,12 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let previous_evaluation: U256 = data::get_current_evaluation();
         let new_evaluation = self._get_evaluation();
 
-        let previous_condition: U256 = previous_evaluation * TRADING_FEE_CONDITION;
-
-        let new_condition = new_evaluation * EQUALIZE_SIZE_VALUE;
+        let previous_condition: U256 = previous_evaluation
+            .checked_mul(TRADING_FEE_CONDITION)
+            .unwrap_or_revert();
+        let new_condition = new_evaluation
+            .checked_mul(EQUALIZE_SIZE_VALUE)
+            .unwrap_or_revert();
 
         if new_condition > previous_condition {
             self._extract_and_send_fees(previous_evaluation, new_evaluation);
@@ -331,74 +360,89 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             .checked_mul(synthetic_balance)
             .unwrap_or_revert();
 
-        let get_double_root: U256 = self._get_double_root(product);
-        let difference: U256 = ((wrapped_balance
+        let difference: U256 = wrapped_balance
             .checked_add(synthetic_balance)
-            .unwrap_or_revert())
-        .checked_sub(get_double_root)
-        .unwrap_or_revert())
-        .checked_mul(self._get_lp_token_balance())
-        .unwrap_or_revert();
+            .unwrap_or_revert()
+            .checked_sub(self._get_double_root(product))
+            .unwrap_or_revert()
+            .checked_mul(self._get_lp_token_balance())
+            .unwrap_or_revert();
 
         difference
             .checked_mul(self._get_liquidity_percent())
             .unwrap_or_revert()
             .checked_div(wrapped_balance)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Error::Div11)
             .checked_mul(LIQUIDITY_PERCENTAGE_CORRECTION)
             .unwrap_or_revert()
             .checked_div(PRECISION_POINTS_POWER3)
-            .unwrap_or_revert()
+            .unwrap_or_revert_with(Error::Div12)
     }
 
     fn _to_remove_cspr(&mut self) -> U256 {
-        let wrapped_balance: U256 = self._get_wrapped_balance();
-        let product_a: U256 = wrapped_balance
-            .integer_sqrt()
-            .checked_mul(PRECISION_DIFF)
-            .unwrap_or_revert();
-        let product_b: U256 = self
-            ._get_synthetic_balance()
-            .checked_mul(PRECISION_POINTS_POWER4)
-            .unwrap_or_revert();
-        let difference: U256 = product_b
-            .integer_sqrt()
-            .checked_sub(product_a)
-            .unwrap_or_revert();
-        let quotient: U256 = wrapped_balance
-            .integer_sqrt()
-            .checked_mul(PRECISION_PROD)
+        let small_token: U256 = self._get_wrapped_balance();
+        let big_token: U256 = self._get_synthetic_balance();
+
+        let sqrt_term: U256 = self._sqrt_term(small_token, big_token);
+
+        let term2: U256 = small_token
+            .checked_mul(INVERSE_TRADING_FEE)
             .unwrap_or_revert()
-            .checked_div(difference)
+            .checked_mul(PRECISION_POINTS_POWER2)
             .unwrap_or_revert();
-        PRECISION_POINTS_POWER2
-            .checked_sub(quotient)
+
+        let left_over_perc: U256 = term2
+            .checked_add(
+                sqrt_term
+                    .checked_mul(PRECISION_POINTS_POWER4)
+                    .unwrap_or_revert(),
+            )
             .unwrap_or_revert()
-            .checked_sub(self._get_liquidity_percent())
+            .checked_mul(PRECISION_POINTS)
             .unwrap_or_revert()
-            .checked_mul(self._get_lp_token_balance())
+            .checked_div(big_token.checked_mul(2.into()).unwrap_or_revert())
+            .unwrap_or_revert();
+
+        let total_supply: U256 = runtime::call_versioned_contract(
+            get_uniswap_pair().into_hash().unwrap_or_revert().into(),
+            None,
+            "total_supply",
+            runtime_args! {},
+        );
+        PRECISION_POINTS_POWER5
+            .checked_sub(left_over_perc)
             .unwrap_or_revert()
-            .checked_mul(LIQUIDITY_PERCENTAGE_CORRECTION)
+            .checked_mul(total_supply)
             .unwrap_or_revert()
             .checked_div(PRECISION_POINTS_POWER5)
             .unwrap_or_revert()
     }
 
     fn _swap_amount_arbitrage_scspr(&mut self) -> U256 {
-        let product: U256 = self
-            ._get_synthetic_balance()
-            .checked_mul(self._get_wrapped_balance())
-            .unwrap_or_revert();
-        let difference = product
-            .integer_sqrt()
-            .checked_sub(self._get_synthetic_balance())
+        let small_token: U256 = self._get_synthetic_balance();
+        let big_token: U256 = self._get_wrapped_balance();
+
+        let denominator: U256 = TRADING_FEE.checked_mul(2.into()).unwrap_or_revert();
+
+        let num_term2: U256 = small_token
+            .checked_mul(
+                PRECISION_POINTS_POWER2
+                    .checked_mul(2.into())
+                    .unwrap_or_revert()
+                    .checked_sub(INVERSE_TRADING_FEE)
+                    .unwrap_or_revert(),
+            )
             .unwrap_or_revert();
 
-        difference
-            .checked_mul(PRECISION_FEES_PROD)
+        let sqrt_term: U256 = self._sqrt_term(small_token, big_token);
+
+        let numerator: U256 = sqrt_term
+            .checked_mul(PRECISION_POINTS_POWER2)
             .unwrap_or_revert()
-            .checked_div(PRECISION_POINTS_POWER3)
-            .unwrap_or_revert()
+            .checked_sub(num_term2)
+            .unwrap_or_revert();
+
+        numerator.checked_div(denominator).unwrap_or_revert()
     }
 
     fn _self_burn(&mut self) {
@@ -502,6 +546,12 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
 
         let swap_amount: U256 = self._swap_amount_arbitrage_scspr();
 
+        self._approve(
+            Key::from(data::get_package_hash()),
+            data::get_uniswap_router(),
+            swap_amount,
+        );
+
         let () = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
             None,
@@ -547,9 +597,13 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     }
 
     fn _arbitrage_cspr(&mut self, wrapped_balance: U256, synthetic_balance: U256) {
-        let condition_wcspr: U256 = wrapped_balance * ARBITRAGE_CONDITION;
-        let condition_scspr = synthetic_balance * PRECISION_POINTS;
-
+        let condition_wcspr: U256 = wrapped_balance
+            .checked_mul(ARBITRAGE_CONDITION)
+            .unwrap_or_revert();
+        let condition_scspr = synthetic_balance
+            .checked_mul(PRECISION_POINTS)
+            .unwrap_or_revert();
+            
         if condition_wcspr >= condition_scspr {
             return;
         }

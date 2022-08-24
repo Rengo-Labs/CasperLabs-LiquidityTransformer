@@ -4,9 +4,9 @@ use test_env::{TestContract, TestEnv};
 use crate::scspr_instance::SCSPRInstance;
 
 const TIME: u64 = 300_000_000;
-const PURSE_AMOUNT: U512 = U512([1000000,0,0,0,0,0,0,0]);
-const INVESTMENT_AMOUNT: U256 = U256([2000_000_000_000, 0, 0, 0]);
-const INVESTMENT_AMOUNT_U512: U512 = U512([2000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
+const PURSE_AMOUNT: U512 = U512([10_000_000_000_000,0,0,0,0,0,0,0]);
+const INVESTMENT_AMOUNT: U256 = U256([2_000_000_000_000, 0, 0, 0]);
+const INVESTMENT_AMOUNT_U512: U512 = U512([2_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
 
 pub fn deploy_liquidity_transformer(
     env: &TestEnv,
@@ -379,6 +379,7 @@ pub fn initialize_system()
         Key::Hash(wcspr.package_hash()),
         PURSE_AMOUNT
     );
+    
     // Using session code as creation of purse is required for transformer
     TestContract::new(
         &env,
@@ -392,7 +393,9 @@ pub fn initialize_system()
         },
         0,
     );
+
     // NOW CALLS TIME SHOULD BE IN ADVANCED TIME 'SECONDS_IN_DAY'
+
     // Using session code as caller of purse is required for reserving wise
     TestContract::new(
         &env,
@@ -408,32 +411,9 @@ pub fn initialize_system()
         },
         TIME,
     );
-    // // Using session code as purse is required for contract funding
-    // TestContract::new(
-    //     &env,
-    //     "session-code-scspr.wasm",
-    //     "fund_contract_call",
-    //     owner,
-    //     runtime_args! {
-    //         "entrypoint" => "fund_contract",
-    //         "package_hash" => Key::Hash(scspr.package_hash()),
-    //         "amount" => U512::from(PURSE_AMOUNT),
-    //     },
-    //     TIME * 150_000,
-    // );
-    // Using session code as purse is required for forward liquidity
-    TestContract::new(
-        &env,
-        "session-code-scspr.wasm",
-        "forward_liquidity_call",
-        owner,
-        runtime_args! {
-            "entrypoint" => "forward_liquidity",
-            "package_hash" => Key::Hash(lt.package_hash()),
-            "amount" => U512::from((PURSE_AMOUNT / 2) * (PURSE_AMOUNT / 2)),
-        },
-        TIME * 150_000,
-    );
+
+    lt.call_contract(owner, "forward_liquidity", runtime_args! {}, TIME * 150_000);
+
     //   await advanceTimeAndBlock(15 * SECONDS_IN_DAY);
     //   await lt.forwardLiquidity({ from: person });
     //   wrappedBalanceAfter = await sbnb.getWrappedBalance();

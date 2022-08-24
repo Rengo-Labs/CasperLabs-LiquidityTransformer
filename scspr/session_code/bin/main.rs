@@ -15,7 +15,6 @@ use casper_types::{
 
 const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const RESERVE_WISE: &str = "reserve_wise";
-const FORWARD_LIQUIDITY: &str = "forward_liquidity";
 const FUND_CONTRACT: &str = "fund_contract";
 
 // Key is the same a destination
@@ -62,20 +61,6 @@ pub extern "C" fn call() {
                     "investment_mode" => investment_mode,
                     "msg_value" => msg_value,
                     "caller_purse" => purse
-                },
-            );
-        }
-        FORWARD_LIQUIDITY => {
-            let caller_purse = account::get_main_purse();
-            let purse: URef = system::create_purse();
-            let amount: U512 = runtime::get_named_arg("amount");
-            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None).unwrap_or_revert();
-            let () = runtime::call_versioned_contract(
-                package_hash.into_hash().unwrap_or_revert().into(),
-                None,
-                FORWARD_LIQUIDITY,
-                runtime_args! {
-                    "purse" => purse
                 },
             );
         }
