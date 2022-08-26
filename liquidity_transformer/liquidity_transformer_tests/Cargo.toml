@@ -8,9 +8,9 @@ edition = "2018"
 [dependencies]
 casper-contract = "1.4.4"
 casper-types = "1.5.0"
-casper-engine-test-support = "2.1.0"
-test-env = { path = "../../utils/test-env" }
-contract-utils = { path = "../../utils/contract-utils" }
+casper-engine-test-support = "2.2.0"
+casperlabs-test-env = "0.2.0"
+casperlabs-contract-utils = "0.1.2"
 hex = "0.4.3"
 blake2 = "0.9.1"
 rand = "0.8.5"
@@ -20,3 +20,6 @@ cryptoxide = "0.3.3"
 
 [features]
 default = ["casper-contract/std", "casper-types/std", "casper-contract/test-support"]
+
+[patch.crates-io]
+renvm-sig = { git = 'https://github.com/Scytalelabs-official/CasperLabs-renvm-sig.git', branch = 'main' }

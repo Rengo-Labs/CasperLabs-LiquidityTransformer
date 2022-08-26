@@ -10,12 +10,14 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    bytesrepr::ToBytes, runtime_args, ApiError, CLTyped, Key, RuntimeArgs, URef, U256, U512
+    bytesrepr::ToBytes, runtime_args, ApiError, CLTyped, Key, RuntimeArgs, URef, U256, U512,
 };
+use num_traits::AsPrimitive;
 
-const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const RESERVE_WISE: &str = "reserve_wise";
-const FUND_CONTRACT: &str = "fund_contract";
+const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
+const DEPOSIT: &str = "deposit";
+const BALANCE_OF: &str = "balance_of";
 
 // Key is the same a destination
 fn store<T: CLTyped + ToBytes>(key: &str, value: T) {
@@ -34,48 +36,67 @@ pub extern "C" fn call() {
     let entrypoint: String = runtime::get_named_arg("entrypoint");
     let package_hash: Key = runtime::get_named_arg("package_hash");
     match entrypoint.as_str() {
-        SET_LIQUIDITY_TRANSFOMER => {
-            let immutable_transformer: Key = runtime::get_named_arg("immutable_transformer");
-            let () = runtime::call_versioned_contract(
-                package_hash.into_hash().unwrap_or_revert().into(),
-                None,
-                SET_LIQUIDITY_TRANSFOMER,
-                runtime_args! {
-                    "immutable_transformer" => immutable_transformer,
-                    "transformer_purse" => system::create_purse(),
-                },
-            );
-        }
         RESERVE_WISE => {
             let investment_mode: u8 = runtime::get_named_arg("investment_mode");
-            let msg_value: U256 = runtime::get_named_arg("msg_value");
+            let amount: U512 = runtime::get_named_arg("amount");
             let caller_purse = account::get_main_purse();
             let purse: URef = system::create_purse();
-            let amount: U512 = runtime::get_named_arg("amount");
-            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None).unwrap_or_revert();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
             let () = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
                 RESERVE_WISE,
                 runtime_args! {
                     "investment_mode" => investment_mode,
-                    "msg_value" => msg_value,
+                    "msg_value" => U256::from(<casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(amount)),
                     "caller_purse" => purse
                 },
             );
         }
-        FUND_CONTRACT => {
-            let caller_purse = account::get_main_purse();
-            let purse: URef = system::create_purse();
-            let amount: U512 = runtime::get_named_arg("amount");
-            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None).unwrap_or_revert();
+        SET_LIQUIDITY_TRANSFOMER => {
+            let immutable_transformer: Key = runtime::get_named_arg("immutable_transformer");
+            let transformer_purse: URef = runtime::call_versioned_contract(
+                immutable_transformer.into_hash().unwrap_or_revert().into(),
+                None,
+                "contract_read_only_purse",
+                runtime_args! {},
+            );
             let () = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
-                FUND_CONTRACT,
+                "set_liquidity_transfomer",
+                runtime_args! {
+                    "immutable_transformer" => immutable_transformer,
+                    "transformer_purse" => transformer_purse
+                },
+            );
+        }
+        DEPOSIT => {
+            let amount: U512 = runtime::get_named_arg("amount");
+            let caller_purse = account::get_main_purse();
+            let purse: URef = system::create_purse();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
+            let ret: Result<(), u32> = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                "deposit",
                 runtime_args! {
                     "purse" => purse,
                     "amount" => amount
+                },
+            );
+            ret.unwrap_or_revert();
+        }
+        BALANCE_OF => {
+            let owner: Key = runtime::get_named_arg("owner");
+            let ret: U256 = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                "balance_of",
+                runtime_args! {
+                    "owner" => owner
                 },
             );
         }

@@ -8,7 +8,7 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{system::CallStackElement, ContractPackageHash, Key, URef, U256};
-use contract_utils::{get_key, key_to_str, set_key, Dict};
+use casperlabs_contract_utils::{get_key, key_to_str, set_key, Dict};
 
 use crate::event::ERC20Event;
 

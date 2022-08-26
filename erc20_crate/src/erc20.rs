@@ -1,14 +1,14 @@
-use crate::alloc::string::ToString;
+use crate::alloc::{collections::BTreeMap, format, string::String, string::ToString, vec::Vec};
 use crate::data::{self, Allowances, Balances, Nonces};
-use alloc::collections::BTreeMap;
-use alloc::{format, string::String, vec::Vec};
-use casper_contract::contract_api::storage;
-use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
+use casper_contract::{
+    contract_api::{runtime, storage},
+    unwrap_or_revert::UnwrapOrRevert,
+};
 use casper_types::{
     system::mint::Error as MintError, ApiError, BlockTime, ContractHash, ContractPackageHash, Key,
     URef, U256,
 };
-use contract_utils::{set_key, ContractContext, ContractStorage};
+use casperlabs_contract_utils::{set_key, ContractContext, ContractStorage};
 use cryptoxide::ed25519;
 use hex::encode;
 use renvm_sig::{hash_message, keccak256};

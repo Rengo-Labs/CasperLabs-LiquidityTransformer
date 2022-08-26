@@ -12,11 +12,10 @@ use casper_types::{
     EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
     U512,
 };
-
-use contract_utils::{ContractContext, OnChainContractStorage};
-use synthetic_token_crate::synthetic_helper_crate::SYNTHETICHELPER;
-use synthetic_token_crate::{self, SYNTHETICTOKEN};
-use synthetic_token_crate::{data, erc20_crate::ERC20};
+use casperlabs_contract_utils::{ContractContext, OnChainContractStorage};
+use synthetic_token_crate::{
+    self, data, erc20_crate::ERC20, synthetic_helper_crate::SYNTHETICHELPER, SYNTHETICTOKEN,
+};
 
 #[derive(Default)]
 struct SyntheticToken(OnChainContractStorage);

@@ -1,5 +1,5 @@
 use casper_types::{ContractPackageHash, Key};
-use contract_utils::{get_key, set_key};
+use casperlabs_contract_utils::{get_key, set_key};
 
 pub const WISE_CONTRACT: &str = "wise_contract";
 pub const SYNTHETIC_TOKEN: &str = "synthetic_token";

@@ -1,6 +1,6 @@
 use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
 use casper_types::{ApiError, ContractPackageHash, Key, URef, U256};
-use contract_utils::{get_key, set_key};
+use casperlabs_contract_utils::{get_key, set_key};
 
 pub const OWNER: &str = "owner";
 pub const SELF_PURSE: &str = "self_purse";

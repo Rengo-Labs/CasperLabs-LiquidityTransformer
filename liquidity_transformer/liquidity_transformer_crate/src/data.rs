@@ -4,7 +4,7 @@ use casper_types::{
     bytesrepr::{FromBytes, ToBytes},
     ApiError, CLTyped, Key, URef, U256,
 };
-use contract_utils::{get_key, set_key, Dict};
+use casperlabs_contract_utils::{get_key, set_key, Dict};
 
 pub const WISE_CONTRACT: &str = "wise_contract";
 pub const UNISWAP_PAIR: &str = "uniswap_pair";

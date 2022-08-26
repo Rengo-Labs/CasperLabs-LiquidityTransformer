@@ -1,5 +1,5 @@
 use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
-use test_env::{TestContract, TestEnv};
+use casperlabs_test_env::{TestContract, TestEnv};
 
 use crate::synthetic_token_instance::SYNTHETICTOKENInstance;
 

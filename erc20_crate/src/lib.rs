@@ -5,7 +5,7 @@ pub mod data;
 mod erc20;
 pub mod event;
 
-pub use contract_utils;
+pub use casperlabs_contract_utils;
 pub use erc20::{Error, ERC20};
 
 use alloc::{collections::BTreeMap, string::String};

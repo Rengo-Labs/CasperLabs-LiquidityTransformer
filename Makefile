@@ -159,11 +159,6 @@ dev4:
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	make test-scspr
 
-dev5:
-	cd ${factory_contract} && make build-contract
-	cp ${factory_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
 dev6:
 	cd ${erc20_contract} && make build-contract
 	cp ${erc20_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}

@@ -16,7 +16,7 @@ use casper_contract::{
 use casper_types::{
     runtime_args, ApiError, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
 };
-use contract_utils::{ContractContext, ContractStorage};
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
 use synthetic_helper_crate::data::*;
 
 pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
@@ -603,7 +603,7 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let condition_scspr = synthetic_balance
             .checked_mul(PRECISION_POINTS)
             .unwrap_or_revert();
-            
+
         if condition_wcspr >= condition_scspr {
             return;
         }

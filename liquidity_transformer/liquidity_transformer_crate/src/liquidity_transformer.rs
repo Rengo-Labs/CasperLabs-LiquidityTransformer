@@ -11,9 +11,9 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
-use contract_utils::{ContractContext, ContractStorage};
-use renvm_sig::keccak256;
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
 use num_traits::cast::AsPrimitive;
+use renvm_sig::keccak256;
 
 use crate::data::{self, *};
 
@@ -176,8 +176,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             runtime::revert(ApiError::from(Error::ReserveWiseMinInvest));
         }
         // Payable
-        let amount: U512 = U512::from(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value));
-        system::transfer_from_purse_to_purse(caller_purse, data::self_purse(), amount, None).unwrap_or_revert();
+        let amount: U512 =
+            U512::from(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value));
+        system::transfer_from_purse_to_purse(caller_purse, data::self_purse(), amount, None)
+            .unwrap_or_revert();
         self._reserve_wise(self.get_caller(), msg_value, investment_mode, caller_purse);
     }
 
@@ -193,7 +195,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
         let args: RuntimeArgs = runtime_args! {
             "owner" => self.get_caller(),
-            "recipient" => data::hash(),
+            "recipient" => data::package(),
             "amount" => token_amount
         };
         let _: Result<(), u32> = runtime::call_versioned_contract(
@@ -310,7 +312,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             let _ = system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from_str(cash_back_amount.to_string().as_str()).unwrap(),
+                U512::from(
+                    <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(cash_back_amount),
+                ),
                 None,
             );
 
@@ -325,9 +329,12 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(return_amount)),
+                U512::from(
+                    <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(return_amount),
+                ),
                 None,
-            ).unwrap_or_revert();
+            )
+            .unwrap_or_revert();
 
             self.emit(&LiquidityTransformerEvent::RefundIssued {
                 investor_address: self.get_caller(),
@@ -380,20 +387,20 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
     fn forward_liquidity(&mut self) {
         self.after_investment_days();
-        let ret: bool = data::Globals::instance().get(UNISWAP_SWAPED);
-        if ret {
+        if data::Globals::instance().get(UNISWAP_SWAPED) {
             runtime::revert(ApiError::from(Error::Swapped));
         }
         let scspr_tokens_amount: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
         let wise_tokens_amount: U256 = data::Globals::instance().get(TOTAL_TRANSFER_TOKENS);
-        let value: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
+
+        let total_cspr_contributed: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
         let () = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
             None,
             "liquidity_deposit",
             runtime_args! {
                 "purse" => data::self_purse(),
-                "msg_value" => value
+                "msg_value" => total_cspr_contributed
             },
         );
 
@@ -421,7 +428,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "mint_supply",
             runtime_args! {
-                "investor_address" => data::hash(),
+                "investor_address" => data::package(),
                 "amount" => wise_tokens_amount
             },
         );
@@ -544,9 +551,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from_str(amount.to_string().as_str()).unwrap(),
+                U512::from(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount)),
                 None,
-            ).unwrap_or_revert();
+            )
+            .unwrap_or_revert();
             self.emit(&LiquidityTransformerEvent::RefundIssued {
                 investor_address: self.get_caller(),
                 refund_amount: amount,
@@ -557,7 +565,8 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn fund_contract(&mut self, purse: URef, amount: U512) {
-        system::transfer_from_purse_to_purse(purse, data::self_purse(), amount, None).unwrap_or_revert();
+        system::transfer_from_purse_to_purse(purse, data::self_purse(), amount, None)
+            .unwrap_or_revert();
     }
 
     fn emit(&mut self, liquidity_transformer_event: &LiquidityTransformerEvent) {

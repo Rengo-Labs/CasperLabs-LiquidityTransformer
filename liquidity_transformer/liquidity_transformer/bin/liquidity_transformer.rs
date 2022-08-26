@@ -4,16 +4,16 @@
 extern crate alloc;
 use alloc::{boxed::Box, collections::BTreeSet, format, vec, vec::Vec};
 use casper_contract::{
-    contract_api::{runtime, storage, system, account},
+    contract_api::{account, runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    runtime_args, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256, U512
+    runtime_args, AccessRights, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash,
+    EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs,
+    URef, U256, U512,
 };
-
-use contract_utils::{ContractContext, OnChainContractStorage};
-use liquidity_transformer_crate::{self, LIQUIDITYTRANSFORMER};
+use casperlabs_contract_utils::{set_key, ContractContext, OnChainContractStorage};
+use liquidity_transformer_crate::{self, data, LIQUIDITYTRANSFORMER};
 
 #[derive(Default)]
 struct LiquidityTransformer(OnChainContractStorage);
@@ -162,6 +162,14 @@ fn fund_contract() {
     LiquidityTransformer::default().fund_contract(purse, amount);
 }
 
+#[no_mangle]
+fn contract_read_only_purse() {
+    runtime::ret(
+        CLValue::from_t(data::self_purse().with_access_rights(AccessRights::READ_ADD))
+            .unwrap_or_revert(),
+    );
+}
+
 fn get_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
@@ -269,7 +277,14 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("purse", URef::cl_type()),
             Parameter::new("amount", U512::cl_type()),
         ],
-        U256::cl_type(),
+        <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "contract_read_only_purse",
+        vec![],
+        URef::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
@@ -294,7 +309,8 @@ pub extern "C" fn call() {
         let purse: URef = system::create_purse();
         let amount: U512 = runtime::get_named_arg("amount");
         if amount != 0.into() {
-            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None).unwrap_or_revert();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
         }
 
         let wise_token: Key = runtime::get_named_arg("wise_token");

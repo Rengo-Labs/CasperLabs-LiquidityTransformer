@@ -9,5 +9,8 @@ casper-contract = "1.4.4"
 casper-types = "1.5.0"
 num-traits= "0.2.15"
 renvm-sig = "0.1.1 "
-contract-utils = { path = "../../utils/contract-utils" }
+casperlabs-contract-utils = "0.1.2"
 hex = { version = "0.4.3", default-features = false }
+
+[patch.crates-io]
+renvm-sig = { git = 'https://github.com/Scytalelabs-official/CasperLabs-renvm-sig.git', branch = 'main' }

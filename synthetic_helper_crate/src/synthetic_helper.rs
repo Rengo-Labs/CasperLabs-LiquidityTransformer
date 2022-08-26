@@ -4,7 +4,7 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
-use contract_utils::{ContractContext, ContractStorage};
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
 
 use crate::data;
 
@@ -63,6 +63,7 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
     }
 
     fn fund_contract(&mut self, purse: URef, amount: U512) {
-        system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None).unwrap_or_revert();
+        system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None)
+            .unwrap_or_revert();
     }
 }

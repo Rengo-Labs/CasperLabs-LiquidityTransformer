@@ -1,12 +1,12 @@
-use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
-use test_env::{TestContract, TestEnv};
+use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, URef, U256, U512};
+use casperlabs_test_env::{call_contract_with_package_hash, TestContract, TestEnv};
 
 use crate::scspr_instance::SCSPRInstance;
 
 const TIME: u64 = 300_000_000;
-const PURSE_AMOUNT: U512 = U512([10_000_000_000_000,0,0,0,0,0,0,0]);
-const INVESTMENT_AMOUNT: U256 = U256([2_000_000_000_000, 0, 0, 0]);
-const INVESTMENT_AMOUNT_U512: U512 = U512([2_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
+const PURSE_AMOUNT: U512 = U512([1_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
+const INVESTMENT_AMOUNT: U256 = U256([1_000_000, 0, 0, 0]);
+const INVESTMENT_AMOUNT_U512: U512 = U512([1_000_000, 0, 0, 0, 0, 0, 0, 0]);
 
 pub fn deploy_liquidity_transformer(
     env: &TestEnv,
@@ -249,7 +249,7 @@ fn deploy_scspr(
         Key::Hash(uniswap_pair.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
         Key::Hash(uniswap_factory.package_hash()),
-        PURSE_AMOUNT
+        PURSE_AMOUNT,
     );
     let helper = deploy_transfer_helper(&env, owner, Key::Hash(scspr.package_hash()));
     (
@@ -299,7 +299,7 @@ pub fn initialize_system()
     scspr.call_contract(
         owner,
         "set_wise",
-        runtime_args!{
+        runtime_args! {
             "wise" => Key::Hash(token.package_hash())
         },
         0,
@@ -377,21 +377,21 @@ pub fn initialize_system()
         Key::Hash(uniswap_pair.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
         Key::Hash(wcspr.package_hash()),
-        PURSE_AMOUNT
+        PURSE_AMOUNT,
     );
-    
-    // Using session code as creation of purse is required for transformer
+
+    // Using session code as caller of purse is required for reserving wise
     TestContract::new(
         &env,
         "session-code-scspr.wasm",
-        "liquidity_transfomer_setup",
+        "set_liquidity_transfomer_call",
         owner,
         runtime_args! {
             "entrypoint" => "set_liquidity_transfomer",
             "package_hash" => Key::Hash(token.package_hash()),
             "immutable_transformer" => Key::Hash(lt.package_hash())
         },
-        0,
+        TIME,
     );
 
     // NOW CALLS TIME SHOULD BE IN ADVANCED TIME 'SECONDS_IN_DAY'
@@ -406,26 +406,76 @@ pub fn initialize_system()
             "entrypoint" => "reserve_wise",
             "package_hash" => Key::Hash(lt.package_hash()),
             "investment_mode" => 1_u8,
-            "msg_value" => INVESTMENT_AMOUNT,
-            "amount" => INVESTMENT_AMOUNT_U512,
+            "amount" => INVESTMENT_AMOUNT_U512
         },
         TIME,
     );
 
+    // // TEST MINT FOR FIRST LIQUIDITY
+    // scspr.call_contract(
+    //     owner,
+    //     "mint",
+    //     runtime_args! {
+    //         "recipient" => pair,
+    //         "amount" => INVESTMENT_AMOUNT * INVESTMENT_AMOUNT,
+    //     },
+    //     0,
+    // );
+    // TestContract::new(
+    //     &env,
+    //     "session-code-scspr.wasm",
+    //     "deposit_call",
+    //     owner,
+    //     runtime_args! {
+    //         "entrypoint" => "deposit",
+    //         "package_hash" => Key::Hash(wcspr.package_hash()),
+    //         "amount" => INVESTMENT_AMOUNT_U512 * INVESTMENT_AMOUNT_U512
+    //     },
+    //     TIME,
+    // );
+    // wcspr.call_contract(
+    //     owner,
+    //     "transfer",
+    //     runtime_args! {
+    //         "recipient" => pair,
+    //         "amount" => INVESTMENT_AMOUNT * INVESTMENT_AMOUNT
+    //     },
+    //     0,
+    // );
+    // // TEST MINT FOR FIRST LIQUIDITY
+
     lt.call_contract(owner, "forward_liquidity", runtime_args! {}, TIME * 150_000);
 
-    //   await advanceTimeAndBlock(15 * SECONDS_IN_DAY);
-    //   await lt.forwardLiquidity({ from: person });
-    //   wrappedBalanceAfter = await sbnb.getWrappedBalance();
-    //   syntheticBalanceAfter = await sbnb.getSyntheticBalance();
-    //   await lt.$getMyTokens({ from: person });
-    //   wbnbAddress = await sbnb.WBNB();
-    //   pairAddress = await sbnb.PANCAKE_PAIR();
-    //   routerAddress = await sbnb.PANCAKE_ROUTER();
-    //   wrapped = await WETHInterface.at(wbnbAddress);
-    //   router = await RouterInterface.at(routerAddress);
-    //   bep20 = await BEP20Interface.at(pairAddress);
-    //   const balanceOfWBNB = await wrapped.balanceOf(pairAddress);
+    scspr.call_contract(owner, "get_wrapped_balance_js_client", runtime_args! {}, 0);
+    let wrapped_balance_after: U256 = scspr.query_named_key("result".into());
+    scspr.call_contract(
+        owner,
+        "get_synthetic_balance_js_client",
+        runtime_args! {},
+        0,
+    );
+    let synthetic_balance_after: U256 = scspr.query_named_key("result".into());
+
+    lt.call_contract(owner, "get_my_tokens", runtime_args! {}, 0);
+
+    let wrapped: Key = scspr.query_named_key("wcspr".into());
+    let router: Key = scspr.query_named_key("uniswap_router".into());
+    let bep20: Key = scspr.query_named_key("uniswap_pair".into());
+
+    let result = TestContract::new(
+        &env,
+        "session-code-scspr.wasm",
+        "balance_of_call",
+        owner,
+        runtime_args! {
+            "entrypoint" => "deposit",
+            "package_hash" => wrapped,
+            "owner" => pair
+        },
+        TIME,
+    );
+    const BALANCE_OF_WCSPR: U256 = result.query_named_key("result".into());
+
     //   assert.equal(syntheticBalanceAfter.toString(), balanceOfWBNB.toString());
     //   assert.equal(wrappedBalanceAfter.toString(), balanceOfWBNB.toString());
 

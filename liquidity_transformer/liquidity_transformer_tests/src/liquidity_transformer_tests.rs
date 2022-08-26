@@ -1,11 +1,9 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
+use crate::liquidity_transformer_instance::LIQUIDITYTRANSFORMERInstance;
 use casper_types::{
     account::AccountHash, runtime_args, ContractPackageHash, Key, RuntimeArgs, U256, U512,
 };
-use test_env::{TestContract, TestEnv};
-
-use crate::liquidity_transformer_instance::LIQUIDITYTRANSFORMERInstance;
+use casperlabs_test_env::{TestContract, TestEnv};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 //
 // --- NOTE FOR HANDLING TIME ---
