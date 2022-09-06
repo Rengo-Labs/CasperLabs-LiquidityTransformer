@@ -16,8 +16,8 @@ use casperlabs_contract_utils::{set_key, ContractContext, OnChainContractStorage
 use scspr_crate::{
     self,
     synthetic_token_crate::{
+        casperlabs_erc20::ERC20,
         data::{get_uniswap_pair, get_uniswap_router, get_wcspr},
-        erc20_crate::ERC20,
         synthetic_helper_crate::SYNTHETICHELPER,
         SYNTHETICTOKEN,
     },
@@ -105,23 +105,23 @@ fn set_wise() {
 
 #[no_mangle]
 fn deposit() {
-    let msg_value: U256 = runtime::get_named_arg("msg_value");
-    let succesor_purse: URef = runtime::get_named_arg("succesor_purse");
-    Scspr::default().deposit(msg_value, succesor_purse);
+    let amount: U256 = runtime::get_named_arg("amount");
+    let purse: URef = runtime::get_named_arg("purse");
+    Scspr::default().deposit(amount, purse);
 }
 
 #[no_mangle]
 fn withdraw() {
-    let msg_value: U256 = runtime::get_named_arg("msg_value");
-    let succesor_purse: URef = runtime::get_named_arg("succesor_purse");
-    Scspr::default().withdraw(msg_value, succesor_purse);
+    let amount: U256 = runtime::get_named_arg("amount");
+    let purse: URef = runtime::get_named_arg("purse");
+    Scspr::default().withdraw(amount, purse);
 }
 
 #[no_mangle]
 fn liquidity_deposit() {
+    let amount: U256 = runtime::get_named_arg("amount");
     let purse: URef = runtime::get_named_arg("purse");
-    let msg_value: U256 = runtime::get_named_arg("msg_value");
-    Scspr::default().liquidity_deposit(purse, msg_value);
+    Scspr::default().liquidity_deposit(purse, amount);
 }
 
 #[no_mangle]
@@ -188,6 +188,15 @@ fn approve() {
 }
 
 #[no_mangle]
+fn transfer() {
+    let recipient: Key = runtime::get_named_arg("recipient");
+    let amount: U256 = runtime::get_named_arg("amount");
+
+    let ret: Result<(), u32> = Scspr::default().transfer(recipient, amount);
+    runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
+}
+
+#[no_mangle]
 fn transfer_from() {
     let owner: Key = runtime::get_named_arg("owner");
     let recipient: Key = runtime::get_named_arg("recipient");
@@ -200,7 +209,6 @@ fn transfer_from() {
 #[no_mangle]
 fn balance_of() {
     let owner: Key = runtime::get_named_arg("owner");
-
     let ret: U256 = Scspr::default().balance_of(owner);
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
@@ -328,8 +336,8 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "deposit",
         vec![
-            Parameter::new("msg_value", U256::cl_type()),
-            Parameter::new("succesor_purse", URef::cl_type()),
+            Parameter::new("amount", U256::cl_type()),
+            Parameter::new("purse", URef::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
@@ -338,8 +346,8 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "withdraw",
         vec![
-            Parameter::new("msg_value", U256::cl_type()),
-            Parameter::new("succesor_purse", URef::cl_type()),
+            Parameter::new("amount", U256::cl_type()),
+            Parameter::new("purse", URef::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
@@ -348,8 +356,8 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "liquidity_deposit",
         vec![
+            Parameter::new("amount", U256::cl_type()),
             Parameter::new("purse", URef::cl_type()),
-            Parameter::new("msg_value", U256::cl_type()),
         ],
         <()>::cl_type(),
         EntryPointAccess::Public,
@@ -425,6 +433,19 @@ fn get_entry_points() -> EntryPoints {
             Parameter::new("amount", U256::cl_type()),
         ],
         <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "transfer",
+        vec![
+            Parameter::new("recipient", Key::cl_type()),
+            Parameter::new("amount", U256::cl_type()),
+        ],
+        CLType::Result {
+            ok: Box::new(CLType::Unit),
+            err: Box::new(CLType::U32),
+        },
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));

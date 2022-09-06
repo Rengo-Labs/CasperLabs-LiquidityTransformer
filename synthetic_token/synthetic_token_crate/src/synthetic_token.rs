@@ -1,8 +1,8 @@
 use core::str::FromStr;
 
 use crate::alloc::string::ToString;
-use crate::data::{self, get_uniswap_pair};
-use crate::erc20_crate::ERC20;
+use crate::casperlabs_erc20::ERC20;
+use crate::data::{self, get_package_hash, get_uniswap_pair};
 use crate::error::Error;
 use crate::event::SyntheticTokenEvent;
 use crate::synthetic_helper_crate::SYNTHETICHELPER;
@@ -17,6 +17,7 @@ use casper_types::{
     runtime_args, ApiError, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
 };
 use casperlabs_contract_utils::{ContractContext, ContractStorage};
+use num_traits::cast::AsPrimitive;
 use synthetic_helper_crate::data::*;
 
 pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
@@ -142,7 +143,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
         let liquidity_percent_squared = liquidity_percent
             .checked_mul(liquidity_percent)
             .unwrap_or_revert();
-
         self._get_wrapped_balance()
             .checked_mul(PRECISION_POINTS_POWER4)
             .unwrap_or_revert()
@@ -215,14 +215,12 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     fn _fees_decision(&mut self) {
         let previous_evaluation: U256 = data::get_current_evaluation();
         let new_evaluation = self._get_evaluation();
-
         let previous_condition: U256 = previous_evaluation
             .checked_mul(TRADING_FEE_CONDITION)
             .unwrap_or_revert();
         let new_condition = new_evaluation
             .checked_mul(EQUALIZE_SIZE_VALUE)
             .unwrap_or_revert();
-
         if new_condition > previous_condition {
             self._extract_and_send_fees(previous_evaluation, new_evaluation);
         }
@@ -290,8 +288,11 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
                 "amount" => _amount_wcspr
             },
         );
-        self.approve(data::get_uniswap_router(), _amount_scspr);
-
+        self._approve(
+            Key::from(get_package_hash()),
+            data::get_uniswap_router(),
+            _amount_scspr,
+        );
         let mut time: u64 = runtime::get_blocktime().into();
         time += 7200;
         let (amount_wcspr, amount_scspr, liquidity): (U256, U256, U256) =
@@ -311,13 +312,11 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
                     "pair" => Some(data::get_uniswap_pair())
                 },
             );
-
         self.synthetic_token_emit(&SyntheticTokenEvent::LiquidityAdded {
             amount_wcspr,
             amount_scspr,
             liquidity,
         });
-
         (amount_wcspr, amount_scspr)
     }
 
@@ -457,17 +456,16 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     fn _clean_up(&mut self, deposit_amount: U256) {
         self._skim_pair();
         self._self_burn();
-        let amount_wcspr: U256 =
-            U256::from_dec_str(self._get_balance_diff(deposit_amount).to_string().as_str())
-                .unwrap();
-        self._profit(U512::from_str(amount_wcspr.to_string().as_str()).unwrap());
+        let amount_wcspr: U256 = <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(
+            self._get_balance_diff(deposit_amount),
+        );
+        self._profit(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount_wcspr));
     }
 
     fn _unwrap(&mut self, amount_wcspr: U256) {
-        let amount_wcspr: U512 = U512::from_str(amount_wcspr.to_string().as_str()).unwrap();
-
+        let amount_wcspr: U512 =
+            <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount_wcspr);
         data::set_bypass_enabled(true);
-
         let _: Result<(), u32> = runtime::call_versioned_contract(
             data::get_wcspr().into_hash().unwrap().into(),
             None,
@@ -477,7 +475,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
                 "amount" => amount_wcspr
             },
         );
-
         data::set_bypass_enabled(false);
     }
 
@@ -516,11 +513,9 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
     fn _arbitrage_decision(&mut self) {
         let wrapped_balance: U256 = self._get_wrapped_balance();
         let synthetic_balance: U256 = self._get_synthetic_balance();
-
         if wrapped_balance < synthetic_balance {
             self._arbitrage_cspr(wrapped_balance, synthetic_balance);
         }
-
         if wrapped_balance > synthetic_balance {
             self._arbitrage_scspr(wrapped_balance, synthetic_balance);
         }

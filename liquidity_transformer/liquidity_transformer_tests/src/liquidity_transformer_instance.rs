@@ -21,6 +21,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
+        amount: U512,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -33,7 +34,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "wcspr" => wcspr,
-                "amount" => U512::from(0)
+                "amount" => amount
             },
             0,
         )

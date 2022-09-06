@@ -12,7 +12,7 @@ use casper_types::{
     EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs,
     URef, U256, U512,
 };
-use casperlabs_contract_utils::{set_key, ContractContext, OnChainContractStorage};
+use casperlabs_contract_utils::{ContractContext, OnChainContractStorage};
 use liquidity_transformer_crate::{self, data, LIQUIDITYTRANSFORMER};
 
 #[derive(Default)]
@@ -116,7 +116,9 @@ fn reserve_wise_with_token() {
 
 #[no_mangle]
 fn forward_liquidity() {
-    LiquidityTransformer::default().forward_liquidity();
+    let pair: Key = runtime::get_named_arg("pair");
+
+    LiquidityTransformer::default().forward_liquidity(pair);
 }
 
 #[no_mangle]
@@ -231,7 +233,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "forward_liquidity",
-        vec![],
+        vec![Parameter::new("pair", Key::cl_type())],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,

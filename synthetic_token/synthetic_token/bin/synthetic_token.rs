@@ -14,7 +14,7 @@ use casper_types::{
 };
 use casperlabs_contract_utils::{ContractContext, OnChainContractStorage};
 use synthetic_token_crate::{
-    self, data, erc20_crate::ERC20, synthetic_helper_crate::SYNTHETICHELPER, SYNTHETICTOKEN,
+    self, casperlabs_erc20::ERC20, data, synthetic_helper_crate::SYNTHETICHELPER, SYNTHETICTOKEN,
 };
 
 #[derive(Default)]

@@ -1,8 +1,6 @@
 [workspace]
 
 members = [
-  # ERC20
-  "erc20_crate",
   # SCSPR
   "scspr/scspr",
   "scspr/scspr_crate",
@@ -16,7 +14,7 @@ members = [
   "liquidity_transformer/test_contract",
   # SYNTHETIC HELPER
   "synthetic_helper_crate",
-  #SYNTHETIC TOKEN
+  # SYNTHETIC TOKEN
   "synthetic_token/synthetic_token",
   "synthetic_token/synthetic_token_crate",
   "synthetic_token/synthetic_token_tests",

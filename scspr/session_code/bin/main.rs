@@ -17,6 +17,8 @@ use num_traits::AsPrimitive;
 const RESERVE_WISE: &str = "reserve_wise";
 const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const DEPOSIT: &str = "deposit";
+const WITHDRAW: &str = "withdraw";
+const TRANSFER: &str = "transfer";
 const BALANCE_OF: &str = "balance_of";
 
 // Key is the same a destination
@@ -49,7 +51,7 @@ pub extern "C" fn call() {
                 RESERVE_WISE,
                 runtime_args! {
                     "investment_mode" => investment_mode,
-                    "msg_value" => U256::from(<casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(amount)),
+                    "msg_value" => <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(amount),
                     "caller_purse" => purse
                 },
             );
@@ -65,7 +67,7 @@ pub extern "C" fn call() {
             let () = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
-                "set_liquidity_transfomer",
+                SET_LIQUIDITY_TRANSFOMER,
                 runtime_args! {
                     "immutable_transformer" => immutable_transformer,
                     "transformer_purse" => transformer_purse
@@ -78,12 +80,41 @@ pub extern "C" fn call() {
             let purse: URef = system::create_purse();
             system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
                 .unwrap_or_revert();
+            let () = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                DEPOSIT,
+                runtime_args! {
+                    "purse" => purse,
+                    "amount" => amount
+                },
+            );
+        }
+        WITHDRAW => {
+            let amount: U512 = runtime::get_named_arg("amount");
+            let caller_purse = account::get_main_purse();
+            let purse: URef = system::create_purse();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
+            let () = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                WITHDRAW,
+                runtime_args! {
+                    "purse" => purse,
+                    "amount" => amount
+                },
+            );
+        }
+        TRANSFER => {
+            let recipient: Key = runtime::get_named_arg("recipient");
+            let amount: U256 = runtime::get_named_arg("amount");
             let ret: Result<(), u32> = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
-                "deposit",
+                TRANSFER,
                 runtime_args! {
-                    "purse" => purse,
+                    "recipient" => recipient,
                     "amount" => amount
                 },
             );
@@ -94,11 +125,12 @@ pub extern "C" fn call() {
             let ret: U256 = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
-                "balance_of",
+                BALANCE_OF,
                 runtime_args! {
                     "owner" => owner
                 },
             );
+            store("balance", ret);
         }
         _ => runtime::revert(ApiError::UnexpectedKeyVariant),
     };

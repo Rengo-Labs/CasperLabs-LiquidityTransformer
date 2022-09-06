@@ -181,69 +181,6 @@ fn test_synthetic_token_deploy() {
 }
 
 #[test]
-fn test_get_trading_fee_amount() {
-    let (_, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-
-    uniswap_pair.call_contract(
-        owner,
-        "erc20_mint",
-        runtime_args! {
-            "to" => Key::Hash(wcspr.package_hash()),
-            "amount" => U256::from(1)
-        },
-        0,
-    );
-    uniswap_pair.call_contract(
-        owner,
-        "erc20_mint",
-        runtime_args! {
-            "to" => Key::Hash(synthetic_token.package_hash()),
-            "amount" => U256::from(1)
-        },
-        0,
-    );
-
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
-    let previous_evaluation: U256 = 10.into();
-    let current_evaluation: U256 = 10.into();
-    instance.get_trading_fee_amount(owner, previous_evaluation, current_evaluation);
-}
-
-#[test]
-fn test_get_amount_payout() {
-    let (env, owner, synthetic_token, wcspr, _, _, _, _, uniswap_pair) = deploy();
-
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
-    let amount: U256 = 10.into();
-    let _: TestContract = deploy_fund_contract_purse_proxy(
-        &env,
-        env.next_user(),
-        Key::Hash(synthetic_token.package_hash()),
-        "fund_contract",
-        U512::from(10000_u128),
-    );
-    uniswap_pair.call_contract(
-        owner,
-        "erc20_mint",
-        runtime_args! {
-            "to" => Key::Hash(synthetic_token.package_hash()),
-            "amount" => U256::from(1)
-        },
-        0,
-    );
-    uniswap_pair.call_contract(
-        owner,
-        "erc20_mint",
-        runtime_args! {
-            "to" => Key::Hash(wcspr.package_hash()),
-            "amount" => U256::from(1)
-        },
-        0,
-    );
-    instance.get_amount_payout(owner, amount);
-}
-
-#[test]
 fn test_get_wrapped_balance() {
     let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
@@ -260,7 +197,6 @@ fn test_get_synthetic_balance() {
 #[test]
 fn test_get_evaluation() {
     let (_, owner, synthetic_token, _, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
     uniswap_pair.call_contract(
         owner,
         "erc20_mint",
@@ -270,7 +206,7 @@ fn test_get_evaluation() {
         },
         0,
     );
-    instance.get_evaluation(owner);
+    synthetic_token.call_contract(owner, "get_evaluation", runtime_args! {}, 0);
 }
 
 #[test]
@@ -290,7 +226,6 @@ fn test_get_lp_token_balance() {
 #[test]
 fn test_get_liquidity_percent() {
     let (_, owner, synthetic_token, _, _, _, _, _, uniswap_pair) = deploy();
-    let instance = SYNTHETICTOKENInstance::instance(synthetic_token.clone());
     uniswap_pair.call_contract(
         owner,
         "erc20_mint",
@@ -300,5 +235,5 @@ fn test_get_liquidity_percent() {
         },
         0,
     );
-    instance.get_liquidity_percent(owner);
+    synthetic_token.call_contract(owner, "get_liquidity_percent", runtime_args! {}, 0);
 }

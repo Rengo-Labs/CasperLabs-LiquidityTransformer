@@ -133,33 +133,3 @@ clippy:
 git-clean:
 	git rm -rf --cached .
 	git add .
-
-dev:
-	cargo build --release -p scspr -p session-code-scspr -p liquidity_transformer --target wasm32-unknown-unknown
-	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
-dev1:
-	cd ${stakeable_token_contract} && make build-contract
-	cp ${stakeable_token_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
-dev2:
-	cd ${factory_contract} && make build-contract
-	cp ${factory_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
-dev3:
-	cd ${wcspr_contract} && make build-contract
-	cp ${wcspr_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
-dev4:
-	cd ${router_contract} && make build-contract
-	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr
-
-dev6:
-	cd ${erc20_contract} && make build-contract
-	cp ${erc20_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	make test-scspr

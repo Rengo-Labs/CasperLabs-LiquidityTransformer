@@ -17,6 +17,7 @@ rand = "0.8.5"
 more-asserts = "0.2.1"
 renvm-sig = "0.1.1"
 cryptoxide = "0.3.3"
+num-traits = "0.2.15"
 
 [features]
 default = ["casper-contract/std", "casper-types/std", "casper-contract/test-support"]

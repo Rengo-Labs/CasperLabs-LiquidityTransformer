@@ -9,3 +9,4 @@ pub mod scspr;
 
 pub use scspr::SCSPR;
 pub use synthetic_token_crate;
+pub use synthetic_token_crate::casperlabs_erc20;

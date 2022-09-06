@@ -13,6 +13,7 @@ casperlabs-test-env = "0.2.0"
 casperlabs-contract-utils = "0.1.2"
 hex = "0.4.3"
 blake2 = "0.9.1"
+num-traits= "0.2.15"
 
 [features]
 default = ["casper-contract/std", "casper-types/std", "casper-contract/test-support"]
