@@ -146,9 +146,9 @@ fn forward_ownership() {
 #[no_mangle]
 fn add_lp_tokens() {
     let purse: URef = runtime::get_named_arg("purse");
-    let msg_value: U256 = runtime::get_named_arg("msg_value");
+    let amount: U256 = runtime::get_named_arg("amount");
     let token_amount: U256 = runtime::get_named_arg("token_amount");
-    Scspr::default().add_lp_tokens(purse, msg_value, token_amount);
+    Scspr::default().add_lp_tokens(purse, amount, token_amount);
 }
 
 #[no_mangle]
@@ -388,7 +388,7 @@ fn get_entry_points() -> EntryPoints {
         "add_lp_tokens",
         vec![
             Parameter::new("purse", URef::cl_type()),
-            Parameter::new("msg_value", U256::cl_type()),
+            Parameter::new("amount", U256::cl_type()),
             Parameter::new("token_amount", U256::cl_type()),
         ],
         <()>::cl_type(),

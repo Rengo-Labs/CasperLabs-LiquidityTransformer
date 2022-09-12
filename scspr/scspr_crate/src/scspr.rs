@@ -10,7 +10,10 @@ use casper_types::{
 use casperlabs_contract_utils::{ContractContext, ContractStorage};
 use num_traits::cast::AsPrimitive;
 use synthetic_token_crate::{
-    data::{self as synthetic_token_data, get_uniswap_router, get_wcspr, set_master_address},
+    data::{
+        self as synthetic_token_data, get_uniswap_pair, get_uniswap_router, get_wcspr,
+        set_master_address,
+    },
     synthetic_helper_crate::data::{get_contract_purse, set_contract_purse, LIMIT_AMOUNT},
     SYNTHETICTOKEN,
 };
@@ -251,13 +254,12 @@ pub trait SCSPR<Storage: ContractStorage>:
 
     fn add_lp_tokens(&mut self, purse: URef, msg_value: U256, token_amount: U256) {
         self.only_master();
-        self.deposit(msg_value, purse);
         // Payable
         let amount: U512 = <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
         system::transfer_from_purse_to_purse(purse, get_contract_purse(), amount, None)
             .unwrap_or_revert();
         let ret: Result<(), u32> = runtime::call_versioned_contract(
-            get_uniswap_router().into_hash().unwrap_or_revert().into(),
+            get_uniswap_pair().into_hash().unwrap_or_revert().into(),
             None,
             "transfer_from",
             runtime_args! {
@@ -267,6 +269,7 @@ pub trait SCSPR<Storage: ContractStorage>:
             },
         );
         ret.unwrap_or_revert();
+        self.deposit(msg_value, purse);
         self._update_evaluation();
     }
 

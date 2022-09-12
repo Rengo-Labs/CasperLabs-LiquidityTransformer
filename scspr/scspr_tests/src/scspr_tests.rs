@@ -1,6 +1,9 @@
+use std::f32::consts::E;
+
+use casper_contract::unwrap_or_revert::UnwrapOrRevert;
 use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
 use casperlabs_test_env::{TestContract, TestEnv};
-use num_traits::cast::AsPrimitive;
+use num_traits::{cast::AsPrimitive, CheckedSub};
 
 use crate::scspr_instance::SCSPRInstance;
 
@@ -9,8 +12,10 @@ use crate::scspr_instance::SCSPRInstance;
 const TIME: u64 = 300_000_000;
 const SCSPR_AMOUNT: U512 = U512([50_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
 const TRANSFORMER_AMOUNT: U512 = U512([50_000_000, 0, 0, 0, 0, 0, 0, 0]);
-const ONE_CSPR: U256 = U256([1_000, 0, 0, 0]);
-const TWOTHOUSEND_CSPR: U256 = U256([2_000_000, 0, 0, 0]);
+const CSPR_1: U256 = U256([1_000, 0, 0, 0]);
+const CSPR_2: U256 = U256([2_000_000, 0, 0, 0]);
+const CSPR_3: U256 = U256([50_000_000_000, 0, 0, 0]);
+const CSPR_4: U256 = U256([200_000_000_000, 0, 0, 0]);
 
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_liquidity_transformer(
@@ -271,6 +276,105 @@ fn deploy_scspr(
     )
 }
 
+fn add_liquidity_person(
+    env: &TestEnv,
+    amount: U256,
+    person: AccountHash,
+    wcspr: &TestContract,
+    scspr: &TestContract,
+    uniswap_router: &TestContract,
+    uniswap_pair: &TestContract,
+) {
+    wcspr.call_contract(
+        person,
+        "approve",
+        runtime_args! {
+            "spender" => Key::Hash(uniswap_router.package_hash()),
+            "amount" => amount
+        },
+        0,
+    );
+    scspr.call_contract(
+        person,
+        "approve",
+        runtime_args! {
+            "spender" => Key::Hash(uniswap_router.package_hash()),
+            "amount" => amount
+        },
+        0,
+    );
+    TestContract::new(
+        &env,
+        "session-code-scspr.wasm",
+        "deposit_call",
+        person,
+        runtime_args! {
+            "entrypoint" => "wcspr_deposit",
+            "package_hash" => Key::Hash(wcspr.package_hash()),
+            "amount" => <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount)
+        },
+        0,
+    );
+    uniswap_router.call_contract(
+        person,
+        "add_liquidity_js_client",
+        runtime_args! {
+            "token_a" => Key::Hash(wcspr.package_hash()),
+            "token_b" => Key::Hash(scspr.package_hash()),
+            "amount_a_desired" => amount,
+            "amount_b_desired" => amount,
+            "amount_a_min" => U256::from(0),
+            "amount_b_min" => U256::from(0),
+            "to" => Key::Account(person),
+            "deadline" => U256::from(170000000000u64),
+            "pair" => Some(Key::Hash(uniswap_pair.package_hash())),
+        },
+        0,
+    );
+}
+
+fn deposit(
+    env: &TestEnv,
+    owner: AccountHash,
+    package: Key,
+    amount: U512,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        &env,
+        "session-code-scspr.wasm",
+        "deposit_call",
+        owner,
+        runtime_args! {
+            "entrypoint" => "deposit",
+            "package_hash" => package,
+            "amount" => amount
+        },
+        time,
+    )
+}
+
+fn withdraw(
+    env: &TestEnv,
+    owner: AccountHash,
+    package: Key,
+    amount: U512,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        &env,
+        "session-code-scspr.wasm",
+        "deposit_call",
+        owner,
+        runtime_args! {
+            "entrypoint" => "withdraw",
+            "package_hash" => package,
+            "amount" => amount
+        },
+        time,
+    )
+}
+
 pub fn balance_of(env: &TestEnv, sender: AccountHash, package: Key, owner: Key) -> U256 {
     TestContract::new(
         env,
@@ -287,12 +391,27 @@ pub fn balance_of(env: &TestEnv, sender: AccountHash, package: Key, owner: Key) 
     env.query_account_named_key(sender, &["balance".into()])
 }
 
+pub fn current_evaluation(env: &TestEnv, sender: AccountHash, package: Key) -> U256 {
+    TestContract::new(
+        &env,
+        "session-code-scspr.wasm",
+        "current_evaluation_call",
+        sender,
+        runtime_args! {
+            "entrypoint" => "current_evaluation",
+            "package_hash" => package
+        },
+        0,
+    );
+    env.query_account_named_key(sender, &["result".into()])
+}
+
 pub fn initialize_system(
     env: &TestEnv,
     owner: AccountHash,
     amount: U256,
     person: AccountHash,
-) -> TestContract {
+) -> (TestContract, TestContract, TestContract, TestContract) {
     let (scspr, uniswap_router, uniswap_factory, uniswap_pair, wcspr, _, helper, flash_swapper) =
         deploy_scspr(env, owner);
     let liquidity_guard = deploy_liquidity_guard(env, owner);
@@ -458,16 +577,17 @@ pub fn initialize_system(
         "wrapped_balance_after & balance_of_wcspr are not equal"
     );
 
-    scspr
+    (scspr, wcspr, uniswap_router, uniswap_pair)
 }
 
-#[test]
+// #[test]
 fn should_allow_to_do_deposit_cspr_and_withdraw_scspr() {
     let env = TestEnv::new();
     let (owner, user2, user4) = (env.next_user(), env.next_user(), env.next_user());
-    let scspr = initialize_system(&env, owner, TWOTHOUSEND_CSPR, user4);
+    let (scspr, _wcspr, _uniswap_router, _uniswap_pair) =
+        initialize_system(&env, owner, CSPR_2, user4);
 
-    let deposit_amount: U256 = ONE_CSPR;
+    let deposit_amount: U256 = CSPR_1;
 
     let balance_scspr_before: U256 = balance_of(
         &env,
@@ -476,16 +596,11 @@ fn should_allow_to_do_deposit_cspr_and_withdraw_scspr() {
         Key::Account(user2),
     );
 
-    TestContract::new(
+    deposit(
         &env,
-        "session-code-scspr.wasm",
-        "deposit_call",
         user2,
-        runtime_args! {
-            "entrypoint" => "deposit",
-            "package_hash" => Key::Hash(scspr.package_hash()),
-            "amount" => <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(deposit_amount)
-        },
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(deposit_amount),
         TIME,
     );
 
@@ -501,16 +616,11 @@ fn should_allow_to_do_deposit_cspr_and_withdraw_scspr() {
         "balance_after & deposit_amount are not equal"
     );
 
-    TestContract::new(
+    withdraw(
         &env,
-        "session-code-scspr.wasm",
-        "withdraw_call",
         user2,
-        runtime_args! {
-            "entrypoint" => "withdraw",
-            "package_hash" => Key::Hash(scspr.package_hash()),
-            "amount" => <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(balance_after)
-        },
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(balance_after),
         TIME,
     );
 
@@ -527,14 +637,15 @@ fn should_allow_to_do_deposit_cspr_and_withdraw_scspr() {
     );
 }
 
-#[test]
-#[should_panic]
+// #[test]
+// #[should_panic]
 fn should_not_allow_to_withdraw_cspr_if_user_do_not_have_scspr() {
     let env = TestEnv::new();
     let (owner, user3, user4) = (env.next_user(), env.next_user(), env.next_user());
-    let scspr = initialize_system(&env, owner, TWOTHOUSEND_CSPR, user4);
+    let (scspr, _wcspr, _uniswap_router, _uniswap_pair) =
+        initialize_system(&env, owner, CSPR_2, user4);
 
-    let withdrawal_amount: U256 = ONE_CSPR;
+    let withdrawal_amount: U256 = CSPR_1;
 
     let sbnb_balanace: U256 = balance_of(
         &env,
@@ -545,16 +656,159 @@ fn should_not_allow_to_withdraw_cspr_if_user_do_not_have_scspr() {
 
     assert_eq!(sbnb_balanace, 0.into(), "user3 dont have default balance");
 
+    withdraw(
+        &env,
+        user3,
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(withdrawal_amount),
+        TIME,
+    );
+}
+
+// Testing LP Token Functions
+
+// #[test]
+fn master_add_lp_tokens_should_work_correctly() {
+    let env = TestEnv::new();
+    let (owner, user1, user2, user4) = (
+        env.next_user(),
+        env.next_user(),
+        env.next_user(),
+        env.next_user(),
+    );
+    let (scspr, wcspr, uniswap_router, uniswap_pair) =
+        initialize_system(&env, owner, CSPR_2, user4);
+
+    const ADD_LIQUIDITY_AMOUNT: U256 = CSPR_3;
+
+    deposit(
+        &env,
+        user1,
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(ADD_LIQUIDITY_AMOUNT),
+        0,
+    );
+
+    add_liquidity_person(
+        &env,
+        ADD_LIQUIDITY_AMOUNT,
+        user1,
+        &wcspr,
+        &scspr,
+        &uniswap_router,
+        &uniswap_pair,
+    );
+
+    const PROVIDE_AMOUNT: U256 = CSPR_4;
+    const TEN: U256 = U256([100000000000, 0, 0, 0]);
+
+    deposit(
+        &env,
+        owner,
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(PROVIDE_AMOUNT),
+        0,
+    );
+
+    add_liquidity_person(
+        &env,
+        PROVIDE_AMOUNT,
+        owner,
+        &wcspr,
+        &scspr,
+        &uniswap_router,
+        &uniswap_pair,
+    );
+
+    let lp_token_user: U256 = balance_of(
+        &env,
+        owner,
+        Key::Hash(uniswap_pair.package_hash()),
+        Key::Account(owner),
+    );
+    uniswap_pair.call_contract(
+        owner,
+        "approve",
+        runtime_args! {
+            "spender" => Key::Hash(scspr.package_hash()),
+            "amount" => lp_token_user
+        },
+        0,
+    );
+    let lp_token_contract_before: U256 = balance_of(
+        &env,
+        owner,
+        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(scspr.package_hash()),
+    );
+
     TestContract::new(
         &env,
         "session-code-scspr.wasm",
-        "withdraw_call",
-        user3,
+        "add_lp_tokens_call",
+        owner,
         runtime_args! {
-            "entrypoint" => "withdraw",
+            "entrypoint" => "add_lp_tokens",
             "package_hash" => Key::Hash(scspr.package_hash()),
-            "amount" => <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(withdrawal_amount)
+            "amount" => <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(TEN),
+            "token_amount" => lp_token_user
         },
-        TIME,
+        0,
     );
+
+    let lp_token_contract_after: U256 = balance_of(
+        &env,
+        owner,
+        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(scspr.package_hash()),
+    );
+
+    let sum: U256 = lp_token_user
+        .checked_add(lp_token_contract_before)
+        .unwrap_or_revert();
+
+    let difference: U256 = lp_token_contract_after.checked_sub(sum).unwrap_or_revert();
+
+    assert_eq!(difference, TEN, "difference & TEN not equal");
+
+    let evaluation_before: U256 = current_evaluation(&env, owner, Key::Hash(scspr.package_hash()));
+
+    deposit(
+        &env,
+        user2,
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(TEN),
+        0,
+    );
+
+    withdraw(
+        &env,
+        user2,
+        Key::Hash(scspr.package_hash()),
+        <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(TEN),
+        0,
+    );
+
+    let evaluation_after: U256 = current_evaluation(&env, owner, Key::Hash(scspr.package_hash()));
+
+    let lp_token_contract_end = balance_of(
+        &env,
+        owner,
+        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(scspr.package_hash()),
+    );
+
+    let second_difference: U256 = lp_token_contract_end
+        .checked_sub(lp_token_contract_after)
+        .unwrap_or_revert();
+
+    let third_difference: U256 = evaluation_after
+        .checked_sub(evaluation_before)
+        .unwrap_or_revert;
+
+    assert_eq!(second_difference, 1.into());
+
+    if third_difference > 0.into() {
+        assert!(false, "Third Difference is 0");
+    }
 }

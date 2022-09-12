@@ -17,9 +17,12 @@ use num_traits::AsPrimitive;
 const RESERVE_WISE: &str = "reserve_wise";
 const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const DEPOSIT: &str = "deposit";
+const WCSPR_DEPOSIT: &str = "wcspr_deposit";
 const WITHDRAW: &str = "withdraw";
 const TRANSFER: &str = "transfer";
 const BALANCE_OF: &str = "balance_of";
+const ADD_LP_TOKENS: &str = "add_lp_tokens";
+const CURRENT_EVALUATION: &str = "current_evaluation";
 
 // Key is the same a destination
 fn store<T: CLTyped + ToBytes>(key: &str, value: T) {
@@ -90,6 +93,23 @@ pub extern "C" fn call() {
                 },
             );
         }
+        WCSPR_DEPOSIT => {
+            let amount: U512 = runtime::get_named_arg("amount");
+            let caller_purse = account::get_main_purse();
+            let purse: URef = system::create_purse();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
+            let ret: Result<(), u32> = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                DEPOSIT,
+                runtime_args! {
+                    "purse" => purse,
+                    "amount" => amount
+                },
+            );
+            ret.unwrap_or_revert();
+        }
         WITHDRAW => {
             let amount: U512 = runtime::get_named_arg("amount");
             let caller_purse = account::get_main_purse();
@@ -131,6 +151,33 @@ pub extern "C" fn call() {
                 },
             );
             store("balance", ret);
+        }
+        ADD_LP_TOKENS => {
+            let amount: U512 = runtime::get_named_arg("amount");
+            let caller_purse = account::get_main_purse();
+            let purse: URef = system::create_purse();
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
+            let token_amount: U256 = runtime::get_named_arg("token_amount");
+            let ret: U256 = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                ADD_LP_TOKENS,
+                runtime_args! {
+                    "purse" => purse,
+                    "amount" => <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(amount),
+                    "token_amount" => token_amount,
+                },
+            );
+        }
+        CURRENT_EVALUATION => {
+            let ret: U256 = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                CURRENT_EVALUATION,
+                runtime_args! {},
+            );
+            store("result", ret);
         }
         _ => runtime::revert(ApiError::UnexpectedKeyVariant),
     };
