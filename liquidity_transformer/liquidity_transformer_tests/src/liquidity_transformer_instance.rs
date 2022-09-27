@@ -1,7 +1,15 @@
 use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef, U256,
 };
+use std::time::{self, SystemTime};
 use test_env::{TestContract, TestEnv};
+
+pub fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
 
 pub struct LIQUIDITYTRANSFORMERInstance(TestContract);
 
@@ -20,6 +28,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
+        time: u64,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -33,7 +42,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "uniswap_router" => uniswap_router,
                 "wcspr" => wcspr,
             },
-            0,
+            time,
         )
     }
 
@@ -42,6 +51,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         contract_name: &str,
         sender: AccountHash,
         liquidity_transformer: Key,
+        time: u64,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -51,7 +61,7 @@ impl LIQUIDITYTRANSFORMERInstance {
             runtime_args! {
                 "liquidity_transformer" => liquidity_transformer,
             },
-            0,
+            time,
         )
     }
 
@@ -61,7 +71,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         liquidity_transformer: Key,
         investment_mode: u8,
         msg_value: U256,
-        block_time: u64,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -71,7 +81,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "investment_mode" => investment_mode,
                 "msg_value" => msg_value,
             },
-            block_time,
+            time,
         );
     }
 
@@ -82,7 +92,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         token_address: Key,
         token_amount: U256,
         investment_mode: u8,
-        block_time: u64,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -93,55 +103,51 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "token_amount" => token_amount,
                 "investment_mode" => investment_mode
             },
-            block_time,
+            time,
         );
     }
 
-    pub fn forward_liquidity(&self, sender: AccountHash, purse: URef) {
+    pub fn forward_liquidity(&self, sender: AccountHash, purse: URef, time: u64) {
         self.0.call_contract(
             sender,
             "forward_liquidity",
             runtime_args! {
                 "purse" => purse
             },
-            0,
+            time,
         );
     }
 
-    pub fn get_my_tokens(&self, sender: AccountHash) {
+    pub fn get_my_tokens(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_my_tokens", runtime_args! {}, 0);
+            .call_contract(sender, "get_my_tokens", runtime_args! {}, time);
     }
 
-    pub fn payout_investor_address(&self, sender: AccountHash, investor_address: Key) {
+    pub fn payout_investor_address(&self, sender: AccountHash, investor_address: Key, time: u64) {
         self.0.call_contract(
             sender,
             "payout_investor_address",
             runtime_args! {
                 "investor_address" => investor_address
             },
-            0,
+            time,
         );
     }
 
-    pub fn prepare_path(&self, sender: AccountHash, token_address: Key) {
+    pub fn prepare_path(&self, sender: AccountHash, token_address: Key, time: u64) {
         self.0.call_contract(
             sender,
             "prepare_path",
             runtime_args! {
                 "token_address" => token_address,
             },
-            0,
+            time,
         );
     }
 
-    pub fn current_stakeable_day(&self, sender: AccountHash, block_time: u64) {
-        self.0.call_contract(
-            sender,
-            "current_stakeable_day",
-            runtime_args! {},
-            block_time,
-        );
+    pub fn current_stakeable_day(&self, sender: AccountHash, time: u64) {
+        self.0
+            .call_contract(sender, "current_stakeable_day", runtime_args! {}, time);
     }
 
     pub fn request_refund(
@@ -149,7 +155,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         sender: AccountHash,
         liquidity_transformer: Key,
         proxy_key: Key,
-        block_time: u64,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -158,11 +164,18 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "liquidity_transformer" => liquidity_transformer,
                 "proxy_key" => proxy_key
             },
-            block_time,
+            time,
         );
     }
 
-    pub fn approve(&self, sender: AccountHash, token_address: Key, spender: Key, amount: U256) {
+    pub fn approve(
+        &self,
+        sender: AccountHash,
+        token_address: Key,
+        spender: Key,
+        amount: U256,
+        time: u64,
+    ) {
         self.0.call_contract(
             sender,
             "approve",
@@ -171,18 +184,18 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "spender" => spender,
                 "amount" => amount
             },
-            0,
+            time,
         );
     }
 
-    pub fn temp_purse(&self, sender: AccountHash, liquidity_transformer: Key) {
+    pub fn temp_purse(&self, sender: AccountHash, liquidity_transformer: Key, time: u64) {
         self.0.call_contract(
             sender,
             "temp_purse",
             runtime_args! {
                 "liquidity_transformer" => liquidity_transformer
             },
-            0,
+            time,
         );
     }
 
