@@ -19,3 +19,7 @@ members = [
   "synthetic_token/synthetic_token_crate",
   "synthetic_token/synthetic_token_tests",
 ]
+
+[profile.release]
+codegen-units = 1
+lto = true

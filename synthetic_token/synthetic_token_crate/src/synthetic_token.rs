@@ -37,8 +37,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             "ST".to_string(),
             9,
             0.into(),
-            "".to_string(),
-            "".to_string(),
             contract_hash,
             package_hash,
         );

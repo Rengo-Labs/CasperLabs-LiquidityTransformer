@@ -798,13 +798,9 @@ fn master_add_lp_tokens_should_work_correctly() {
         Key::Hash(scspr.package_hash()),
     );
 
-    let second_difference: U256 = lp_token_contract_end
-        .checked_sub(lp_token_contract_after)
-        .unwrap_or_revert();
+    let second_difference: U256 = lp_token_contract_end - lp_token_contract_after;
 
-    let third_difference: U256 = evaluation_after
-        .checked_sub(evaluation_before)
-        .unwrap_or_revert;
+    let third_difference: U256 = evaluation_after - evaluation_before;
 
     assert_eq!(second_difference, 1.into());
 
