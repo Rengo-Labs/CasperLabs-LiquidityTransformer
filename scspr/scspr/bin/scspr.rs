@@ -17,7 +17,7 @@ use scspr_crate::{
     self,
     synthetic_token_crate::{
         casperlabs_erc20::ERC20,
-        data::{get_uniswap_pair, get_uniswap_router, get_wcspr},
+        data::{self, get_uniswap_pair, get_uniswap_router, get_wcspr},
         synthetic_helper_crate::SYNTHETICHELPER,
         SYNTHETICTOKEN,
     },
@@ -302,6 +302,43 @@ fn get_liquidity_percent() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+// Synthetic token
+
+#[no_mangle]
+fn master_address() {
+    runtime::ret(CLValue::from_t(data::get_master_address()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn current_evaluation() {
+    runtime::ret(CLValue::from_t(data::get_current_evaluation()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn transfer_helper() {
+    runtime::ret(CLValue::from_t(data::get_transfer_helper()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn token_defined() {
+    runtime::ret(CLValue::from_t(data::get_token_defined()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn allow_deposit() {
+    runtime::ret(CLValue::from_t(data::get_allow_deposit()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn helper_defined() {
+    runtime::ret(CLValue::from_t(data::get_helper_defined()).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn bypass_enabled() {
+    runtime::ret(CLValue::from_t(data::get_bypass_enabled()).unwrap_or_revert());
+}
+
 fn get_entry_points() -> EntryPoints {
     let mut entry_points = EntryPoints::new();
     entry_points.add_entry_point(EntryPoint::new(
@@ -572,6 +609,58 @@ fn get_entry_points() -> EntryPoints {
         "get_liquidity_percent",
         vec![],
         U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+
+    // Synthetic token
+
+    entry_points.add_entry_point(EntryPoint::new(
+        "master_address",
+        vec![],
+        Key::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "current_evaluation",
+        vec![],
+        U256::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "transfer_helper",
+        vec![],
+        Key::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "token_defined",
+        vec![],
+        bool::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "allow_deposit",
+        vec![],
+        bool::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "helper_defined",
+        vec![],
+        bool::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "bypass_enabled",
+        vec![],
+        bool::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));

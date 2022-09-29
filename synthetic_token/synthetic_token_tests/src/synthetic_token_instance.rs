@@ -19,6 +19,7 @@ impl SYNTHETICTOKENInstance {
         wcspr: Key,
         uniswap_pair: Key,
         uniswap_router: Key,
+        time: u64,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -30,7 +31,7 @@ impl SYNTHETICTOKENInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
             },
-            0,
+            time,
         )
     }
 
@@ -39,6 +40,7 @@ impl SYNTHETICTOKENInstance {
         sender: AccountHash,
         previous_evaluation: U256,
         current_evaluation: U256,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -47,49 +49,49 @@ impl SYNTHETICTOKENInstance {
                 "previous_evaluation" => previous_evaluation,
                 "current_evaluation" => current_evaluation
             },
-            0,
+            time,
         );
     }
 
-    pub fn get_amount_payout(&self, sender: AccountHash, amount: U256) {
+    pub fn get_amount_payout(&self, sender: AccountHash, amount: U256, time: u64) {
         self.0.call_contract(
             sender,
             "get_amount_payout",
             runtime_args! {
                 "amount" => amount
             },
-            0,
+            time,
         );
     }
 
-    pub fn get_wrapped_balance(&self, sender: AccountHash) {
+    pub fn get_wrapped_balance(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_wrapped_balance", runtime_args! {}, 0);
+            .call_contract(sender, "get_wrapped_balance", runtime_args! {}, time);
     }
 
-    pub fn get_synthetic_balance(&self, sender: AccountHash) {
+    pub fn get_synthetic_balance(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_synthetic_balance", runtime_args! {}, 0);
+            .call_contract(sender, "get_synthetic_balance", runtime_args! {}, time);
     }
 
-    pub fn get_evaluation(&self, sender: AccountHash) {
+    pub fn get_evaluation(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_evaluation", runtime_args! {}, 0);
+            .call_contract(sender, "get_evaluation", runtime_args! {}, time);
     }
 
-    pub fn get_pair_balances(&self, sender: AccountHash) {
+    pub fn get_pair_balances(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_pair_balances", runtime_args! {}, 0);
+            .call_contract(sender, "get_pair_balances", runtime_args! {}, time);
     }
 
-    pub fn get_lp_token_balance(&self, sender: AccountHash) {
+    pub fn get_lp_token_balance(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_lp_token_balance", runtime_args! {}, 0);
+            .call_contract(sender, "get_lp_token_balance", runtime_args! {}, time);
     }
 
-    pub fn get_liquidity_percent(&self, sender: AccountHash) {
+    pub fn get_liquidity_percent(&self, sender: AccountHash, time: u64) {
         self.0
-            .call_contract(sender, "get_liquidity_percent", runtime_args! {}, 0);
+            .call_contract(sender, "get_liquidity_percent", runtime_args! {}, time);
     }
 
     // Result methods

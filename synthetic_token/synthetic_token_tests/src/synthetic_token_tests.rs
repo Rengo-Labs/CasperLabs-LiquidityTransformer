@@ -1,7 +1,16 @@
+use std::time::SystemTime;
+
 use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
 use casperlabs_test_env::{TestContract, TestEnv};
 
 use crate::synthetic_token_instance::SYNTHETICTOKENInstance;
+
+pub fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
 
 pub fn deploy_fund_contract_purse_proxy(
     env: &TestEnv,
@@ -9,6 +18,7 @@ pub fn deploy_fund_contract_purse_proxy(
     destination_package_hash: Key,
     destination_entrypoint: &str,
     amount: U512,
+    time: u64,
 ) -> TestContract {
     TestContract::new(
         env,
@@ -20,11 +30,11 @@ pub fn deploy_fund_contract_purse_proxy(
             "destination_entrypoint" => destination_entrypoint,
             "amount" => amount,
         },
-        0,
+        time,
     )
 }
 
-fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
+fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
     TestContract::new(
         env,
         "factory.wasm",
@@ -33,11 +43,11 @@ fn deploy_uniswap_factory(env: &TestEnv, owner: AccountHash) -> TestContract {
         runtime_args! {
             "fee_to_setter" => Key::from(owner)
         },
-        0,
+        time,
     )
 }
 
-fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
+fn deploy_wcspr(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
     let decimals: u8 = 18;
     TestContract::new(
         env,
@@ -49,7 +59,7 @@ fn deploy_wcspr(env: &TestEnv, owner: AccountHash) -> TestContract {
             "symbol" => "WCSPR",
             "decimals" => decimals
         },
-        0,
+        time,
     )
 }
 
@@ -58,6 +68,7 @@ fn deploy_flash_swapper(
     owner: AccountHash,
     wcspr: &TestContract,
     uniswap_factory: &TestContract,
+    time: u64,
 ) -> TestContract {
     TestContract::new(
         env,
@@ -69,7 +80,7 @@ fn deploy_flash_swapper(
             "dai" => Key::Hash(wcspr.package_hash()),
             "uniswap_v2_factory" => Key::Hash(uniswap_factory.package_hash())
         },
-        0,
+        time,
     )
 }
 
@@ -78,6 +89,7 @@ fn deploy_uniswap_pair(
     owner: AccountHash,
     flash_swapper: &TestContract,
     uniswap_factory: &TestContract,
+    time: u64,
 ) -> TestContract {
     let flash_swapper_package_hash: Key =
         flash_swapper.query_named_key("contract_package_hash".to_string());
@@ -94,18 +106,18 @@ fn deploy_uniswap_pair(
             "callee_package_hash" => flash_swapper_package_hash,
             "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
         },
-        0,
+        time,
     )
 }
 
-fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash) -> TestContract {
+fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
     TestContract::new(
         env,
         "uniswap-v2-library.wasm",
         "library",
         owner,
         runtime_args! {},
-        0,
+        time,
     )
 }
 
@@ -115,6 +127,7 @@ fn deploy_uniswap_router(
     uniswap_factory: &TestContract,
     wcspr: &TestContract,
     uniswap_library: &TestContract,
+    time: u64,
 ) -> TestContract {
     TestContract::new(
         env,
@@ -126,7 +139,7 @@ fn deploy_uniswap_router(
             "wcspr" => Key::Hash(wcspr.package_hash()),
             "library" => Key::Hash(uniswap_library.package_hash())
         },
-        0,
+        time,
     )
 }
 
@@ -144,14 +157,20 @@ fn deploy() -> (
     let env = TestEnv::new();
     let owner = env.next_user();
 
-    let wcspr = deploy_wcspr(&env, owner);
-    let uniswap_library = deploy_uniswap_library(&env, owner);
-    let uniswap_factory = deploy_uniswap_factory(&env, owner);
-    let uniswap_router =
-        deploy_uniswap_router(&env, owner, &uniswap_factory, &wcspr, &uniswap_library);
-    let flash_swapper = deploy_flash_swapper(&env, owner, &wcspr, &uniswap_factory);
+    let wcspr = deploy_wcspr(&env, owner, now());
+    let uniswap_library = deploy_uniswap_library(&env, owner, now());
+    let uniswap_factory = deploy_uniswap_factory(&env, owner, now());
+    let uniswap_router = deploy_uniswap_router(
+        &env,
+        owner,
+        &uniswap_factory,
+        &wcspr,
+        &uniswap_library,
+        now(),
+    );
+    let flash_swapper = deploy_flash_swapper(&env, owner, &wcspr, &uniswap_factory, now());
     let uniswap_pair: TestContract =
-        deploy_uniswap_pair(&env, owner, &flash_swapper, &uniswap_factory);
+        deploy_uniswap_pair(&env, owner, &flash_swapper, &uniswap_factory, now());
 
     let synthetic_token = SYNTHETICTOKENInstance::new(
         &env,
@@ -160,6 +179,7 @@ fn deploy() -> (
         Key::Hash(wcspr.package_hash()),
         Key::Hash(uniswap_pair.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
+        now(),
     );
 
     (
@@ -184,14 +204,14 @@ fn test_synthetic_token_deploy() {
 fn test_get_wrapped_balance() {
     let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
-    instance.get_wrapped_balance(owner);
+    instance.get_wrapped_balance(owner, now());
 }
 
 #[test]
 fn test_get_synthetic_balance() {
     let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
-    instance.get_synthetic_balance(owner);
+    instance.get_synthetic_balance(owner, now());
 }
 
 #[test]
@@ -213,14 +233,14 @@ fn test_get_evaluation() {
 fn test_get_pair_balances() {
     let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
-    instance.get_pair_balances(owner);
+    instance.get_pair_balances(owner, now());
 }
 
 #[test]
 fn test_get_lp_token_balance() {
     let (_, owner, synthetic_token, _, _, _, _, _, _) = deploy();
     let instance = SYNTHETICTOKENInstance::instance(synthetic_token);
-    instance.get_lp_token_balance(owner);
+    instance.get_lp_token_balance(owner, now());
 }
 
 #[test]

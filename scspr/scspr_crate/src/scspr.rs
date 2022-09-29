@@ -78,9 +78,19 @@ pub trait SCSPR<Storage: ContractStorage>:
         if !is_allow_deposit {
             runtime::revert(ApiError::from(Error::DepositDisabled));
         }
+        // Payable
+        let payable_amount: U512 =
+            <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
+        system::transfer_from_purse_to_purse(
+            succesor_purse,
+            get_contract_purse(),
+            payable_amount,
+            None,
+        )
+        .unwrap_or_revert();
         let is_bypass_enabled: bool = synthetic_token_data::get_bypass_enabled();
         if is_bypass_enabled {
-            self.deposit(msg_value, succesor_purse);
+            self.deposit(msg_value, get_contract_purse());
         }
     }
 
@@ -258,6 +268,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         let amount: U512 = <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
         system::transfer_from_purse_to_purse(purse, get_contract_purse(), amount, None)
             .unwrap_or_revert();
+        self.deposit(msg_value, get_contract_purse());
         let ret: Result<(), u32> = runtime::call_versioned_contract(
             get_uniswap_pair().into_hash().unwrap_or_revert().into(),
             None,
@@ -269,7 +280,6 @@ pub trait SCSPR<Storage: ContractStorage>:
             },
         );
         ret.unwrap_or_revert();
-        self.deposit(msg_value, purse);
         self._update_evaluation();
     }
 
