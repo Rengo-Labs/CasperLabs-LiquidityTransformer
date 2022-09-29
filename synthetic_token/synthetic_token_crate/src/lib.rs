@@ -7,6 +7,6 @@ pub mod error;
 pub mod event;
 pub mod synthetic_token;
 
-pub use erc20_crate;
+pub use casperlabs_erc20;
 pub use synthetic_helper_crate;
 pub use synthetic_token::SYNTHETICTOKEN;

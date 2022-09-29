@@ -1,15 +1,8 @@
 use casper_types::{
-    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef, U256,
+    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, URef,
+    U256, U512,
 };
-use std::time::{self, SystemTime};
-use test_env::{TestContract, TestEnv};
-
-pub fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
-}
+use casperlabs_test_env::{TestContract, TestEnv};
 
 pub struct LIQUIDITYTRANSFORMERInstance(TestContract);
 
@@ -28,6 +21,7 @@ impl LIQUIDITYTRANSFORMERInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         wcspr: Key,
+        amount: U512,
         time: u64,
     ) -> TestContract {
         TestContract::new(
@@ -41,6 +35,7 @@ impl LIQUIDITYTRANSFORMERInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "wcspr" => wcspr,
+                "amount" => amount
             },
             time,
         )

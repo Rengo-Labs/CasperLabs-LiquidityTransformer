@@ -27,7 +27,14 @@ wasm_dest_synthetic_token_path = ${liquidity_transformer_directory}/synthetic_to
 prepare:
 	rustup target add wasm32-unknown-unknown
 
+build-contract:
+    # Building transformer contracts
+	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p purse-proxy -p proxy_liquidity_transformer -p session-code-scspr --target wasm32-unknown-unknown
+
 build-all:
+    # Building transformer contracts
+	make build-contract
+
     # Building contracts
 	cd ${erc20_contract} && make build-contract
 	cd ${factory_contract} && make build-contract
@@ -43,21 +50,6 @@ build-all:
 
     # Copying wasm files
 	make copy-wasm-file
-
-clean-all:
-    # Cleaning contracts
-	make clean
-	cd ${erc20_contract} && make clean
-	cd ${factory_contract} && make clean
-	cd ${flash_swapper_contract} && make clean
-	cd ${pair_contract} && make clean
-	cd ${wcspr_contract} && make clean
-	cd ${library_contract} && make clean
-	cd ${router_contract} && make clean
-	cd ${stakeable_token_contract} && make clean
-	cd ${liquidity_guard_contract} && make clean
-	cd ${transfer_helper_contract} && make clean
-	cd ${liquidity_transformer_directory} && make clean
 
 # Copying wasms to required directory
 copy-wasm-file:
@@ -94,16 +86,27 @@ copy-wasm-file:
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_synthetic_token_path}
 
-build-contract:
-    # Building transformer contracts
-	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p purse-proxy -p proxy_liquidity_transformer -p proxy_scspr --target wasm32-unknown-unknown
-
 clean:
 	cargo clean
 	rm -rf liquidity_transformer_tests/wasm/*.wasm
 	rm -rf scspr_tests/wasm/*.wasm
 	rm -rf synthetic_token_tests/wasm/*.wasm
 	rm -rf Cargo.lock
+
+clean-all:
+    # Cleaning contracts
+	make clean
+	cd ${erc20_contract} && make clean
+	cd ${factory_contract} && make clean
+	cd ${flash_swapper_contract} && make clean
+	cd ${pair_contract} && make clean
+	cd ${wcspr_contract} && make clean
+	cd ${library_contract} && make clean
+	cd ${router_contract} && make clean
+	cd ${stakeable_token_contract} && make clean
+	cd ${liquidity_guard_contract} && make clean
+	cd ${transfer_helper_contract} && make clean
+	cd ${liquidity_transformer_directory} && make clean
 
 test-liquidity-transformer:
 	cargo test -p liquidity_transformer_tests

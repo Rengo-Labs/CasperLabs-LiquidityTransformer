@@ -1,9 +1,8 @@
 use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, ContractPackageHash, Key,
-    RuntimeArgs, URef, U256,
+    RuntimeArgs, URef, U256, U512,
 };
-use test_env::{TestContract, TestEnv};
-
+use casperlabs_test_env::{TestContract, TestEnv};
 pub struct SCSPRInstance(TestContract);
 
 impl SCSPRInstance {
@@ -20,7 +19,8 @@ impl SCSPRInstance {
         uniswap_pair: Key,
         uniswap_router: Key,
         uniswap_factory: Key,
-        synthetic_token: Key,
+        amount: U512,
+        time: u64,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -32,9 +32,9 @@ impl SCSPRInstance {
                 "uniswap_pair" => uniswap_pair,
                 "uniswap_router" => uniswap_router,
                 "uniswap_factory" => uniswap_factory,
-                "synthetic_token" => synthetic_token
+                "amount" => amount
             },
-            0,
+            time,
         )
     }
 
@@ -43,6 +43,7 @@ impl SCSPRInstance {
         contract_name: &str,
         sender: AccountHash,
         scspr: Key,
+        time: u64,
     ) -> TestContract {
         TestContract::new(
             env,
@@ -52,7 +53,7 @@ impl SCSPRInstance {
             runtime_args! {
                 "scspr" => scspr,
             },
-            0,
+            time,
         )
     }
 
@@ -63,6 +64,7 @@ impl SCSPRInstance {
         uniswap_factory: Key,
         synthetic_helper: Key,
         synthetic_token: Key,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -73,7 +75,7 @@ impl SCSPRInstance {
                 "synthetic_helper" => synthetic_helper,
                 "synthetic_token" => synthetic_token,
             },
-            0,
+            time,
         );
     }
 
@@ -82,7 +84,7 @@ impl SCSPRInstance {
         Key::from(tmp)
     }
 
-    pub fn deposit(&self, sender: AccountHash, msg_value: U256, succesor_purse: URef) {
+    pub fn deposit(&self, sender: AccountHash, msg_value: U256, succesor_purse: URef, time: u64) {
         self.0.call_contract(
             sender,
             "deposit",
@@ -90,11 +92,11 @@ impl SCSPRInstance {
                 "msg_value" => msg_value,
                 "succesor_purse" => succesor_purse
             },
-            0,
+            time,
         );
     }
 
-    pub fn withdraw(&self, sender: AccountHash, msg_value: U256, succesor_purse: URef) {
+    pub fn withdraw(&self, sender: AccountHash, msg_value: U256, succesor_purse: URef, time: u64) {
         self.0.call_contract(
             sender,
             "withdraw",
@@ -102,73 +104,73 @@ impl SCSPRInstance {
                 "msg_value" => msg_value,
                 "succesor_purse" => succesor_purse
             },
-            0,
+            time,
         );
     }
 
-    pub fn define_helper(&self, sender: AccountHash, transfer_helper: Key) {
+    pub fn define_helper(&self, sender: AccountHash, transfer_helper: Key, time: u64) {
         self.0.call_contract(
             sender,
             "define_helper",
             runtime_args! {
                 "transfer_helper" => transfer_helper
             },
-            0,
+            time,
         );
     }
 
-    pub fn define_token(&self, sender: AccountHash, wise_token: Key) {
+    pub fn define_token(&self, sender: AccountHash, wise_token: Key, time: u64) {
         self.0.call_contract(
             sender,
             "define_token",
             runtime_args! {
                 "wise_token" => wise_token
             },
-            0,
+            time,
         );
     }
 
-    pub fn create_pair(&self, sender: AccountHash, pair: Key) {
+    pub fn create_pair(&self, sender: AccountHash, pair: Key, time: u64) {
         self.0.call_contract(
             sender,
             "create_pair",
             runtime_args! {
                 "pair" => pair
             },
-            0,
+            time,
         );
     }
 
-    pub fn forward_ownership(&self, sender: AccountHash, new_master: Key) {
+    pub fn forward_ownership(&self, sender: AccountHash, new_master: Key, time: u64) {
         self.0.call_contract(
             sender,
             "forward_ownership",
             runtime_args! {
                 "new_master" => new_master
             },
-            0,
+            time,
         );
     }
 
-    pub fn set_wise(&self, sender: AccountHash, wise: Key) {
+    pub fn set_wise(&self, sender: AccountHash, wise: Key, time: u64) {
         self.0.call_contract(
             sender,
             "set_wise",
             runtime_args! {
                 "wise" => wise
             },
-            0,
+            time,
         );
     }
 
-    pub fn temp_purse(&self, sender: AccountHash, contract: Key) {
+    pub fn temp_purse(&self, sender: AccountHash, contract: Key, time: u64) {
         self.0.call_contract(
             sender,
             "temp_purse",
             runtime_args! {
                 "contract" => contract
             },
-            0,
+            time,
         );
     }
 
@@ -179,7 +181,7 @@ impl SCSPRInstance {
         liquidity_transformer: Key,
         investment_mode: u8,
         msg_value: U256,
-        block_time: u64,
+        time: u64,
     ) {
         self.0.call_contract(
             sender,
@@ -189,7 +191,7 @@ impl SCSPRInstance {
                 "investment_mode" => investment_mode,
                 "msg_value" => msg_value,
             },
-            block_time,
+            time,
         );
     }
 

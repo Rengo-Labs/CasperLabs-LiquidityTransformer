@@ -1,10 +1,10 @@
-use alloc::string::{String, ToString};
+use alloc::string::ToString;
 use casper_contract::{contract_api::runtime, unwrap_or_revert::UnwrapOrRevert};
 use casper_types::{
     bytesrepr::{FromBytes, ToBytes},
     ApiError, CLTyped, Key, URef, U256,
 };
-use contract_utils::{get_key, set_key, Dict};
+use casperlabs_contract_utils::{get_key, key_to_str, set_key, Dict};
 
 pub const WISE_CONTRACT: &str = "wise_contract";
 pub const UNISWAP_PAIR: &str = "uniswap_pair";
@@ -14,10 +14,10 @@ pub const WCSPR: &str = "wcspr";
 pub const SCSPR: &str = "scspr";
 
 pub const INVESTMENT_DAYS: u8 = 15;
-pub const MAX_SUPPLY: u128 = 264_000_000_000_000_000; // 264_000_000_000_000_000_000_000_000;
-pub const MAX_INVEST: u128 = 200_000_000_000_000; // 200_000_000_000_000_000_000_000;
-pub const TOKEN_COST: u128 = MAX_INVEST / (MAX_SUPPLY / 1_000_000_000); // MAX_INVEST / (MAX_SUPPLY / 1_000_000_000_000_000_000);
-pub const REFUND_CAP: u128 = 1_000_000_000_000; // 1_000_000_000_000_000_000_000;
+pub const MAX_SUPPLY: u128 = 264_000_000_000_000_000; // 264000000E9;
+pub const MAX_INVEST: u128 = 200_000_000_000_000; // 200000E9;
+pub const TOKEN_COST: u128 = MAX_INVEST / (MAX_SUPPLY / 1_000_000_000); // MAX_INVEST / (MAX_SUPPLY / 1E9);
+pub const REFUND_CAP: u128 = 100_000_000_000; // 100E9;
 
 pub const UNIQUE_INVESTORS: &str = "unique_investors";
 pub const PURCHASED_TOKENS: &str = "purchased_tokens";
@@ -30,6 +30,13 @@ pub const SELF_PURSE: &str = "self_purse";
 pub const SETTINGS_KEEPER: &str = "settings_keeper";
 
 pub const GLOBALS: &str = "globals";
+
+pub const CASH_BACK_TOTAL: &str = "cash_back_total";
+pub const INVESTOR_COUNT: &str = "investor_count";
+pub const TOTAL_TRANSFER_TOKENS: &str = "total_transfer_tokens";
+pub const TOTAL_CSPR_CONTRIBUTED: &str = "total_cspr_contributed";
+pub const UNISWAP_SWAPED: &str = "uniswap_swaped";
+
 pub struct Globals {
     dict: Dict,
 }
@@ -69,12 +76,12 @@ impl InvestorBalance {
         Dict::init(INVESTOR_BALANCE)
     }
 
-    pub fn get(&self, key: &str) -> U256 {
-        self.dict.get(key).unwrap_or_default()
+    pub fn get(&self, key: &Key) -> U256 {
+        self.dict.get(&key_to_str(key)).unwrap_or_default()
     }
 
-    pub fn set(&self, key: &str, value: U256) {
-        self.dict.set(key, value);
+    pub fn set(&self, key: &Key, value: U256) {
+        self.dict.set(&key_to_str(key), value);
     }
 }
 
@@ -93,12 +100,12 @@ impl PurchasedTokens {
         Dict::init(PURCHASED_TOKENS)
     }
 
-    pub fn get(&self, key: &String) -> U256 {
-        self.dict.get(key.to_string().as_str()).unwrap_or_default()
+    pub fn get(&self, key: &Key) -> U256 {
+        self.dict.get(&key_to_str(key)).unwrap_or_default()
     }
 
-    pub fn set(&self, key: &String, value: U256) {
-        self.dict.set(key.to_string().as_str(), value);
+    pub fn set(&self, key: &Key, value: U256) {
+        self.dict.set(&key_to_str(key), value);
     }
 }
 

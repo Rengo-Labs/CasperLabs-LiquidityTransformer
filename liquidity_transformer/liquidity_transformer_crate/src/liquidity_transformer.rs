@@ -1,6 +1,5 @@
 use alloc::vec;
 use alloc::vec::Vec;
-use core::str::FromStr;
 
 use alloc::{
     collections::BTreeMap,
@@ -11,8 +10,8 @@ use casper_contract::{
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
-use contract_utils::{ContractContext, ContractStorage};
-use renvm_sig::keccak256;
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
+use num_traits::cast::AsPrimitive;
 
 use crate::data::{self, *};
 
@@ -107,12 +106,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         data::set_uniswap_pair(uniswap_pair);
         data::set_uniswap_router(uniswap_router);
         data::set_wcspr(wcspr);
-
         data::set_hash(contract_hash);
         data::set_package(package_hash);
-        data::set_self_purse(purse);
-
         data::set_settings_keeper(self.get_caller());
+        data::set_self_purse(purse);
 
         Globals::init();
         UniqueInvestors::init();
@@ -129,14 +126,14 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn after_uniswap_transfer(&self) {
-        let ret: bool = data::Globals::instance().get("uniswap_swaped");
+        let ret: bool = data::Globals::instance().get(UNISWAP_SWAPED);
         if !ret {
             runtime::revert(ApiError::from(Error::ForwardLiquidityFirst));
         }
     }
 
     fn below_maximum_invest(&self) {
-        let ret: U256 = data::Globals::instance().get("total_transfer_tokens");
+        let ret: U256 = data::Globals::instance().get(TOTAL_TRANSFER_TOKENS);
         if ret >= U256::from(data::MAX_SUPPLY) {
             runtime::revert(ApiError::from(Error::ReserveWiseMaxSupplyReached));
         }
@@ -176,6 +173,10 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         if msg_value < U256::from(data::TOKEN_COST) {
             runtime::revert(ApiError::from(Error::ReserveWiseMinInvest));
         }
+        // Payable
+        let amount: U512 = <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
+        system::transfer_from_purse_to_purse(caller_purse, data::self_purse(), amount, None)
+            .unwrap_or_revert();
         self._reserve_wise(self.get_caller(), msg_value, investment_mode, caller_purse);
     }
 
@@ -191,7 +192,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
         let args: RuntimeArgs = runtime_args! {
             "owner" => self.get_caller(),
-            "recipient" => data::hash(),
+            "recipient" => data::package(),
             "amount" => token_amount
         };
         let _: Result<(), u32> = runtime::call_versioned_contract(
@@ -247,41 +248,38 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         investment_mode: u8,
         caller_purse: URef,
     ) {
-        let sender_address_hash =
-            hex::encode(keccak256(sender_address.to_formatted_string().as_bytes()));
-
         if investment_mode >= 6 {
             runtime::revert(ApiError::from(Error::ReserverWiseWrongMode));
         }
 
-        if InvestorBalance::instance().get(&sender_address_hash) == U256::from(0) {
-            let ret: U256 = data::Globals::instance().get("investor_count");
+        if InvestorBalance::instance().get(&sender_address) == U256::from(0) {
+            let ret: U256 = data::Globals::instance().get(INVESTOR_COUNT);
             UniqueInvestors::instance().set(&ret, sender_address);
-            let ret: U256 = data::Globals::instance().get("investor_count");
-            data::Globals::instance().set("investor_count", ret + 1);
+            let ret: U256 = data::Globals::instance().get(INVESTOR_COUNT);
+            data::Globals::instance().set(INVESTOR_COUNT, ret + 1);
         }
 
         let (sender_tokens, return_amount): (U256, U256) = self._get_token_amount(
-            data::Globals::instance().get("total_cspr_contributed"),
-            data::Globals::instance().get("total_transfer_tokens"),
+            data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED),
+            data::Globals::instance().get(TOTAL_TRANSFER_TOKENS),
             sender_value,
         );
 
-        let ret: U256 = data::Globals::instance().get("total_cspr_contributed");
-        data::Globals::instance().set("total_cspr_contributed", ret + sender_value);
-        let ret: U256 = data::Globals::instance().get("total_transfer_tokens");
-        data::Globals::instance().set("total_transfer_tokens", ret + sender_tokens);
+        let ret: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
+        data::Globals::instance().set(TOTAL_CSPR_CONTRIBUTED, ret + sender_value);
+        let ret: U256 = data::Globals::instance().get(TOTAL_TRANSFER_TOKENS);
+        data::Globals::instance().set(TOTAL_TRANSFER_TOKENS, ret + sender_tokens);
 
         InvestorBalance::instance().set(
-            &sender_address_hash,
-            InvestorBalance::instance().get(&sender_address_hash) + sender_value,
+            &sender_address,
+            InvestorBalance::instance().get(&sender_address) + sender_value,
         );
         PurchasedTokens::instance().set(
-            &sender_address_hash,
-            PurchasedTokens::instance().get(&sender_address_hash) + sender_tokens,
+            &sender_address,
+            PurchasedTokens::instance().get(&sender_address) + sender_tokens,
         );
 
-        let ret: U256 = data::Globals::instance().get("cash_back_total");
+        let ret: U256 = data::Globals::instance().get(CASH_BACK_TOTAL);
         if investment_mode == 0
             && ret < U256::from(data::REFUND_CAP)
             && return_amount < sender_value
@@ -292,23 +290,25 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                 .checked_div(100.into())
                 .unwrap_or_revert();
 
-            let mut cash_back: U256 = data::Globals::instance().get("cash_back_total");
+            let mut cash_back: U256 = data::Globals::instance().get(CASH_BACK_TOTAL);
             cash_back = cash_back.checked_add(cash_back_amount).unwrap_or_revert();
 
-            if cash_back >= U256::from(data::REFUND_CAP) {
-                cash_back_amount = U256::from(REFUND_CAP)
-                    .checked_sub(data::Globals::instance().get("cash_back_total"))
-                    .unwrap_or_revert();
-            }
+            cash_back_amount = if cash_back < U256::from(REFUND_CAP) {
+                cash_back_amount
+            } else {
+                U256::from(REFUND_CAP)
+                    .checked_sub(data::Globals::instance().get(CASH_BACK_TOTAL))
+                    .unwrap_or_revert()
+            };
 
-            let mut ret: U256 = data::Globals::instance().get("cash_back_total");
+            let mut ret: U256 = data::Globals::instance().get(CASH_BACK_TOTAL);
             ret = ret.checked_add(cash_back_amount).unwrap_or_revert();
-            data::Globals::instance().set("cash_back_total", ret);
+            data::Globals::instance().set(CASH_BACK_TOTAL, ret);
 
             let _ = system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from_str(cash_back_amount.to_string().as_str()).unwrap(),
+                <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(cash_back_amount),
                 None,
             );
 
@@ -320,12 +320,13 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         }
 
         if return_amount > U256::from(0) {
-            let _ = system::transfer_from_purse_to_purse(
+            system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from_str(return_amount.to_string().as_str()).unwrap(),
+                <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(return_amount),
                 None,
-            );
+            )
+            .unwrap_or_revert();
 
             self.emit(&LiquidityTransformerEvent::RefundIssued {
                 investor_address: self.get_caller(),
@@ -360,52 +361,44 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
         let mut return_amount: U256 = 0.into();
         if new_supply > U256::from(data::MAX_SUPPLY) {
-            token_amount = U256::from(
-                data::MAX_SUPPLY
-                    .checked_sub(total_transfer_tokens.as_u128())
-                    .unwrap_or_revert(),
-            );
-            let available_value = MAX_INVEST
-                .checked_sub(total_cspr_contributed.as_u128())
+            token_amount = U256::from(data::MAX_SUPPLY)
+                .checked_sub(total_transfer_tokens)
                 .unwrap_or_revert();
-            return_amount = sender_value
-                .checked_sub(U256::from(available_value))
+            let available_value = U256::from(MAX_INVEST)
+                .checked_sub(total_cspr_contributed)
                 .unwrap_or_revert();
+            return_amount = sender_value.checked_sub(available_value).unwrap_or_revert();
         }
 
         (token_amount, return_amount)
     }
 
-    fn forward_liquidity(&mut self, purse: URef) {
+    fn forward_liquidity(&mut self, pair: Key) {
         self.after_investment_days();
-
-        let ret: bool = data::Globals::instance().get("uniswap_swaped");
-        if ret {
+        if data::Globals::instance().get(UNISWAP_SWAPED) {
             runtime::revert(ApiError::from(Error::Swapped));
         }
+        let scspr_tokens_amount: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
+        let wise_tokens_amount: U256 = data::Globals::instance().get(TOTAL_TRANSFER_TOKENS);
+        let total_cspr_contributed: U256 = data::Globals::instance().get(TOTAL_CSPR_CONTRIBUTED);
 
-        let scspr_tokens_amount: U256 = data::Globals::instance().get("total_cspr_contributed");
-        let wise_tokens_amount: U256 = data::Globals::instance().get("total_transfer_tokens");
-        let value: U256 = data::Globals::instance().get("total_cspr_contributed");
         let () = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
             None,
             "liquidity_deposit",
             runtime_args! {
-                "msg_value" => value
+                "amount" => total_cspr_contributed,
+                "purse" => data::self_purse(),
             },
         );
-
         let _: U256 = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
             None,
             "form_liquidity",
             runtime_args! {
-              "purse" => purse,
-              "pair" => data::uniswap_pair()
+                "pair" => data::uniswap_pair()
             },
         );
-
         let () = runtime::call_versioned_contract(
             data::scspr().into_hash().unwrap_or_revert().into(),
             None,
@@ -421,17 +414,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "mint_supply",
             runtime_args! {
-                "investor_address" => data::hash(),
-                "amount" => wise_tokens_amount
-            },
-        );
-
-        let () = runtime::call_versioned_contract(
-            data::wise().into_hash().unwrap_or_revert().into(),
-            None,
-            "approve",
-            runtime_args! {
-                "spender" => data::uniswap_router(),
+                "investor_address" => data::package(),
                 "amount" => wise_tokens_amount
             },
         );
@@ -461,11 +444,11 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                     "amount_b_min" => U256::from(0),
                     "to" => data::zero_address(),
                     "deadline" => U256::from(time + 7_200_000),
-                    "pair" => Some(data::uniswap_pair())
+                    "pair" => Some(pair)
                 },
             );
 
-        data::Globals::instance().set("uniswap_swaped", true);
+        data::Globals::instance().set(UNISWAP_SWAPED, true);
 
         self.emit(&LiquidityTransformerEvent::UniswapSwapResult {
             amount_token_a,
@@ -480,13 +463,9 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn payout_investor_address(&self, investor_address: Key) -> U256 {
-        let investor_address_hash =
-            hex::encode(keccak256(investor_address.to_formatted_string().as_bytes()));
-
         self.after_uniswap_transfer();
-        let payout: U256 = PurchasedTokens::instance().get(&investor_address_hash);
-        PurchasedTokens::instance().set(&investor_address_hash, 0.into());
-
+        let payout: U256 = PurchasedTokens::instance().get(&investor_address);
+        PurchasedTokens::instance().set(&investor_address, 0.into());
         if payout > U256::from(0) {
             let () = runtime::call_versioned_contract(
                 data::wise().into_hash().unwrap_or_revert().into(),
@@ -515,45 +494,42 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     }
 
     fn request_refund(&mut self, caller_purse: URef) -> (U256, U256) {
-        let caller_address_hash = hex::encode(keccak256(
-            self.get_caller().to_formatted_string().as_bytes(),
-        ));
-
-        let ret: bool = data::Globals::instance().get("uniswap_swaped");
+        let ret: bool = data::Globals::instance().get(UNISWAP_SWAPED);
         if ret
-            || InvestorBalance::instance().get(&caller_address_hash) <= U256::from(0)
-            || PurchasedTokens::instance().get(&caller_address_hash) <= U256::from(0)
+            || InvestorBalance::instance().get(&self.get_caller()) <= U256::from(0)
+            || PurchasedTokens::instance().get(&self.get_caller()) <= U256::from(0)
             || self.current_stakeable_day() <= (data::INVESTMENT_DAYS + 10) as u64
         {
             runtime::revert(ApiError::from(Error::RefundNotPossible));
         }
-
-        let amount: U256 = InvestorBalance::instance().get(&caller_address_hash);
-        InvestorBalance::instance().set(&caller_address_hash, 0.into());
-
-        let tokens: U256 = PurchasedTokens::instance().get(&caller_address_hash);
-        PurchasedTokens::instance().set(&caller_address_hash, 0.into());
-
-        let ret: U256 = data::Globals::instance().get("total_transfer_tokens");
+        let amount: U256 = InvestorBalance::instance().get(&self.get_caller());
+        InvestorBalance::instance().set(&self.get_caller(), 0.into());
+        let tokens: U256 = PurchasedTokens::instance().get(&self.get_caller());
+        PurchasedTokens::instance().set(&self.get_caller(), 0.into());
+        let ret: U256 = data::Globals::instance().get(TOTAL_TRANSFER_TOKENS);
         data::Globals::instance().set(
-            "total_transfer_tokens",
+            TOTAL_TRANSFER_TOKENS,
             ret.checked_sub(tokens).unwrap_or_revert(),
         );
-
         if amount > U256::from(0) {
-            let _ = system::transfer_from_purse_to_purse(
+            system::transfer_from_purse_to_purse(
                 data::self_purse(),
                 caller_purse,
-                U512::from_str(amount.to_string().as_str()).unwrap(),
+                <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount),
                 None,
-            );
+            )
+            .unwrap_or_revert();
             self.emit(&LiquidityTransformerEvent::RefundIssued {
                 investor_address: self.get_caller(),
                 refund_amount: amount,
             });
         }
-
         (amount, tokens)
+    }
+
+    fn fund_contract(&mut self, purse: URef, amount: U512) {
+        system::transfer_from_purse_to_purse(purse, data::self_purse(), amount, None)
+            .unwrap_or_revert();
     }
 
     fn emit(&mut self, liquidity_transformer_event: &LiquidityTransformerEvent) {

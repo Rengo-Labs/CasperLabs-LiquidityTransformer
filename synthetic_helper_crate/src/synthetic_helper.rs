@@ -1,12 +1,12 @@
+use crate::data;
 use alloc::{vec, vec::Vec};
 use casper_contract::{
     contract_api::{runtime, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{runtime_args, ApiError, Key, RuntimeArgs, URef, U256, U512};
-use contract_utils::{ContractContext, ContractStorage};
-
-use crate::data;
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
+use num_traits::cast::AsPrimitive;
 
 #[repr(u16)]
 pub enum Error {
@@ -42,10 +42,12 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
 
     fn _get_balance_diff(&mut self, amount: U256) -> U512 {
         if system::get_purse_balance(data::get_contract_purse()).unwrap_or_revert()
-            > U512::from(amount.as_usize())
+            > <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount)
         {
-            return system::get_purse_balance(data::get_contract_purse()).unwrap_or_revert()
-                - U512::from(amount.as_usize());
+            return system::get_purse_balance(data::get_contract_purse())
+                .unwrap_or_revert()
+                .checked_sub(<casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount))
+                .unwrap_or_revert();
         }
         0.into()
     }
@@ -63,8 +65,7 @@ pub trait SYNTHETICHELPER<Storage: ContractStorage>: ContractContext<Storage> {
     }
 
     fn fund_contract(&mut self, purse: URef, amount: U512) {
-        let ret =
-            system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None);
-        ret.unwrap_or_revert();
+        system::transfer_from_purse_to_purse(purse, data::get_contract_purse(), amount, None)
+            .unwrap_or_revert();
     }
 }

@@ -1,5 +1,3 @@
-use core::str::FromStr;
-
 use crate::{data, errors::Error, event::SCSPREvent};
 use alloc::vec::Vec;
 use casper_contract::{
@@ -9,10 +7,14 @@ use casper_contract::{
 use casper_types::{
     runtime_args, ApiError, ContractPackageHash, Key, RuntimeArgs, URef, U256, U512,
 };
-use contract_utils::{ContractContext, ContractStorage};
+use casperlabs_contract_utils::{ContractContext, ContractStorage};
+use num_traits::cast::AsPrimitive;
 use synthetic_token_crate::{
-    data::{self as synthetic_token_data, set_master_address},
-    synthetic_helper_crate::data::{get_contract_purse, set_contract_purse},
+    data::{
+        self as synthetic_token_data, get_uniswap_pair, get_uniswap_router, get_wcspr,
+        set_master_address,
+    },
+    synthetic_helper_crate::data::{get_contract_purse, set_contract_purse, LIMIT_AMOUNT},
     SYNTHETICTOKEN,
 };
 
@@ -24,15 +26,14 @@ pub trait SCSPR<Storage: ContractStorage>:
     fn init(
         &mut self,
         uniswap_factory: Key,
-        synthetic_token: Key,
         contract_hash: Key,
         package_hash: ContractPackageHash,
+        purse: URef,
     ) {
         data::set_uniswap_factory(uniswap_factory);
-        data::set_synthetic_token(synthetic_token);
         data::set_hash(contract_hash);
         data::set_package_hash(package_hash);
-        set_contract_purse(system::create_purse());
+        set_contract_purse(purse);
         data::set_owner(self.get_caller());
         set_master_address(self.get_caller());
     }
@@ -77,22 +78,37 @@ pub trait SCSPR<Storage: ContractStorage>:
         if !is_allow_deposit {
             runtime::revert(ApiError::from(Error::DepositDisabled));
         }
+        // Payable
+        let payable_amount: U512 =
+            <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
+        system::transfer_from_purse_to_purse(
+            succesor_purse,
+            get_contract_purse(),
+            payable_amount,
+            None,
+        )
+        .unwrap_or_revert();
         let is_bypass_enabled: bool = synthetic_token_data::get_bypass_enabled();
         if is_bypass_enabled {
-            self.deposit(msg_value, succesor_purse);
+            self.deposit(msg_value, get_contract_purse());
         }
     }
 
-    fn deposit(&mut self, msg_value: U256, succesor_purse: URef) {
+    fn deposit(&mut self, amount: U256, purse: URef) {
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
         if !is_allow_deposit {
             runtime::revert(ApiError::from(Error::InvalidDeposit));
         }
-        let deposit_amount: U256 = msg_value;
+        // Payable
+        let payable_amount: U512 =
+            <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount);
+        system::transfer_from_purse_to_purse(purse, get_contract_purse(), payable_amount, None)
+            .unwrap_or_revert();
+        let deposit_amount: U256 = amount;
         self._clean_up(deposit_amount);
         self._fees_decision();
         self._arbitrage_decision();
-        self._settle_cspr(deposit_amount, succesor_purse);
+        self._settle_scspr(amount);
         self._update_evaluation();
         self.scspr_emit(&SCSPREvent::DepositedLiquidity {
             deposit_amount,
@@ -100,88 +116,59 @@ pub trait SCSPR<Storage: ContractStorage>:
         });
     }
 
-    fn withdraw(&mut self, token_amount: U256, succesor_purse: URef) {
+    fn withdraw(&mut self, amount: U256, purse: URef) {
         self._clean_up(0.into());
         self._fees_decision();
         self._arbitrage_decision();
-        self._settle_cspr(token_amount, succesor_purse);
+        self._settle_cspr(amount, purse);
         self._update_evaluation();
         self.scspr_emit(&SCSPREvent::Withdrawal {
             from_address: self.get_caller(),
-            token_amount,
+            token_amount: amount,
         });
     }
 
     fn _settle_cspr(&mut self, amount_withdraw: U256, succesor_purse: URef) {
         let (amount_wcspr, amount_scspr): (U256, U256) = self._remove_liquidity(amount_withdraw);
-
         self._unwrap(amount_wcspr);
-
-        let contract_purse = get_contract_purse();
-        let _ = system::transfer_from_purse_to_purse(
-            contract_purse,
+        system::transfer_from_purse_to_purse(
+            get_contract_purse(),
             succesor_purse,
-            U512::from(amount_wcspr.as_usize()),
+            <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(amount_wcspr),
             None,
-        );
-
+        )
+        .unwrap_or_revert();
         self.burn(self.get_caller(), amount_withdraw);
-        self.burn(data::get_hash(), amount_scspr);
+        self.burn(Key::from(data::get_contract_package_hash()), amount_scspr);
     }
 
     fn _settle_scspr(&mut self, amount_withdraw: U256) {
         self.mint(self.get_caller(), amount_withdraw);
-
-        let limit_amount: U256 = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "limit_amount",
-            runtime_args! {},
-        );
-
-        self.mint(data::get_hash(), limit_amount);
-
-        let wcspr: Key = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "wcspr",
-            runtime_args! {},
-        );
-        let () = runtime::call_versioned_contract(
-            wcspr.into_hash().unwrap_or_revert().into(),
+        self.mint(Key::from(data::get_contract_package_hash()), LIMIT_AMOUNT);
+        let ret: Result<(), u32> = runtime::call_versioned_contract(
+            get_wcspr().into_hash().unwrap_or_revert().into(),
             None,
             "deposit",
             runtime_args! {
-                "msg_value" => amount_withdraw
+                "amount" => amount_withdraw,
+                "purse" => get_contract_purse()
             },
         );
-
-        let limit_amount: U256 = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "limit_amount",
-            runtime_args! {},
-        );
-        self._add_liquidity(amount_withdraw, limit_amount);
-
+        ret.unwrap_or_revert();
+        self._add_liquidity(amount_withdraw, LIMIT_AMOUNT);
         self._self_burn();
     }
 
-    fn liquidity_deposit(&mut self, msg_value: U256) {
+    fn liquidity_deposit(&mut self, purse: URef, msg_value: U256) {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
         if is_allow_deposit {
             runtime::revert(ApiError::from(Error::InvalidDeposit));
         }
+        // Payable
+        let amount: U512 = <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
+        system::transfer_from_purse_to_purse(purse, get_contract_purse(), amount, None)
+            .unwrap_or_revert();
         self.mint(self.get_caller(), msg_value);
         self.scspr_emit(&SCSPREvent::DepositedLiquidity {
             deposit_amount: msg_value,
@@ -189,7 +176,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         });
     }
 
-    fn form_liquidity(&mut self, _pair: Option<Key>, purse: URef) -> U256 {
+    fn form_liquidity(&mut self, _pair: Option<Key>) -> U256 {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
         if is_allow_deposit {
@@ -197,50 +184,32 @@ pub trait SCSPR<Storage: ContractStorage>:
         }
         synthetic_token_data::set_allow_deposit(true);
         let cover_amount_: U512 = self._get_balance_half();
-        let cover_amount: U256 = U256::from_str(cover_amount_.to_string().as_str()).unwrap();
+        let cover_amount: U256 =
+            <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(cover_amount_);
         self.mint(Key::from(data::get_contract_package_hash()), cover_amount);
-        let uniswap_router: Key = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "uniswap_router",
-            runtime_args! {},
-        );
-
         self._approve(
             Key::from(data::get_contract_package_hash()),
-            uniswap_router,
+            get_uniswap_router(),
             cover_amount,
         );
-
-        let wcspr: Key = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "wcspr",
-            runtime_args! {},
-        );
-
         let ret: Result<(), u32> = runtime::call_versioned_contract(
-            wcspr.into_hash().unwrap_or_revert().into(),
+            get_wcspr().into_hash().unwrap_or_revert().into(),
             None,
             "deposit",
             runtime_args! {
-                "purse" => purse,
-                "amount" => cover_amount_ * cover_amount_
+                "purse" => get_contract_purse(),
+                "amount" => cover_amount_
             },
         );
-        ret.unwrap_or_revert();
+        if ret.is_err() {
+            runtime::revert(ApiError::from(Error::AmountToTransferIsZero));
+        }
         let () = runtime::call_versioned_contract(
-            wcspr.into_hash().unwrap_or_revert().into(),
+            get_wcspr().into_hash().unwrap_or_revert().into(),
             None,
             "approve",
             runtime_args! {
-                "spender" => uniswap_router,
+                "spender" => get_uniswap_router(),
                 "amount" => cover_amount
             },
         );
@@ -249,11 +218,11 @@ pub trait SCSPR<Storage: ContractStorage>:
         let time: u64 = runtime::get_blocktime().into();
         let (amount_token_a, amount_token_b, liquidity): (U256, U256, U256) =
             runtime::call_versioned_contract(
-                uniswap_router.into_hash().unwrap_or_revert().into(),
+                get_uniswap_router().into_hash().unwrap_or_revert().into(),
                 None,
                 "add_liquidity",
                 runtime_args! {
-                    "token_a" => wcspr,
+                    "token_a" => get_wcspr(),
                     "token_b" => Key::from(data::get_contract_package_hash()),
                     "amount_a_desired" => cover_amount,
                     "amount_b_desired" => cover_amount,
@@ -264,20 +233,16 @@ pub trait SCSPR<Storage: ContractStorage>:
                     "pair" => _pair,
                 },
             );
-
         self.scspr_emit(&SCSPREvent::FormedLiquidity {
             cover_amount,
             amount_token_a,
             amount_token_b,
             liquidity,
         });
-
         let remaining_balance: U512 =
             system::get_purse_balance(get_contract_purse()).unwrap_or_revert();
-
         self._profit(remaining_balance);
         self._update_evaluation();
-
         cover_amount
     }
 
@@ -297,6 +262,27 @@ pub trait SCSPR<Storage: ContractStorage>:
         synthetic_token_data::set_master_address(new_master);
     }
 
+    fn add_lp_tokens(&mut self, purse: URef, msg_value: U256, token_amount: U256) {
+        self.only_master();
+        // Payable
+        let amount: U512 = <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(msg_value);
+        system::transfer_from_purse_to_purse(purse, get_contract_purse(), amount, None)
+            .unwrap_or_revert();
+        self.deposit(msg_value, get_contract_purse());
+        let ret: Result<(), u32> = runtime::call_versioned_contract(
+            get_uniswap_pair().into_hash().unwrap_or_revert().into(),
+            None,
+            "transfer_from",
+            runtime_args! {
+                "owner" => self.get_caller(),
+                "recipient" => Key::from(data::get_contract_package_hash()),
+                "amount" => token_amount
+            },
+        );
+        ret.unwrap_or_revert();
+        self._update_evaluation();
+    }
+
     fn define_token(&mut self, wise_token: Key) -> Key {
         self.only_master();
         let is_token_defined: bool = synthetic_token_data::get_token_defined();
@@ -311,7 +297,7 @@ pub trait SCSPR<Storage: ContractStorage>:
             runtime_args! {},
         );
 
-        if synthetic_cspr != data::get_hash() {
+        if synthetic_cspr != Key::from(data::get_contract_package_hash()) {
             runtime::revert(ApiError::from(Error::InvalidWiseContractAddress));
         }
 
@@ -326,36 +312,21 @@ pub trait SCSPR<Storage: ContractStorage>:
         if is_helper_defined {
             runtime::revert(ApiError::from(Error::AlreadyDefined));
         }
-
         let transfer_invoker: Key = runtime::call_versioned_contract(
             transfer_helper.into_hash().unwrap_or_revert().into(),
             None,
             "get_transfer_invoker_address",
             runtime_args! {},
         );
-
-        if transfer_invoker != data::get_hash() {
+        if transfer_invoker != Key::from(data::get_contract_package_hash()) {
             runtime::revert(ApiError::from(Error::InvalidTransferHelperAddress));
         }
-
         synthetic_token_data::set_helper_defined(true);
-
         transfer_invoker
     }
 
     fn create_pair(&mut self, pair: Key) {
         self.only_master();
-
-        let wcspr: Key = runtime::call_versioned_contract(
-            data::get_synthetic_token()
-                .into_hash()
-                .unwrap_or_revert()
-                .into(),
-            None,
-            "wcspr",
-            runtime_args! {},
-        );
-
         let () = runtime::call_versioned_contract(
             data::get_uniswap_factory()
                 .into_hash()
@@ -364,12 +335,11 @@ pub trait SCSPR<Storage: ContractStorage>:
             None,
             "create_pair",
             runtime_args! {
-                "token_a" => wcspr,
-                "token_b" => data::get_hash(),
+                "token_a" => get_wcspr(),
+                "token_b" => Key::from(data::get_contract_package_hash()),
                 "pair_hash" => pair
             },
         );
-
         synthetic_token_data::set_uniswap_pair(pair);
     }
 

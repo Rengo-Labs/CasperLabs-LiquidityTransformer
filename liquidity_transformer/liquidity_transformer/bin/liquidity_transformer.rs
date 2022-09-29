@@ -4,16 +4,16 @@
 extern crate alloc;
 use alloc::{boxed::Box, collections::BTreeSet, format, vec, vec::Vec};
 use casper_contract::{
-    contract_api::{runtime, storage, system},
+    contract_api::{account, runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
 use casper_types::{
-    runtime_args, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash, EntryPoint,
-    EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
+    runtime_args, AccessRights, CLType, CLTyped, CLValue, ContractHash, ContractPackageHash,
+    EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs,
+    URef, U256, U512,
 };
-
-use contract_utils::{ContractContext, OnChainContractStorage};
-use liquidity_transformer_crate::{self, LIQUIDITYTRANSFORMER};
+use casperlabs_contract_utils::{ContractContext, OnChainContractStorage};
+use liquidity_transformer_crate::{self, data, LIQUIDITYTRANSFORMER};
 
 #[derive(Default)]
 struct LiquidityTransformer(OnChainContractStorage);
@@ -116,9 +116,9 @@ fn reserve_wise_with_token() {
 
 #[no_mangle]
 fn forward_liquidity() {
-    let purse: URef = runtime::get_named_arg("purse");
+    let pair: Key = runtime::get_named_arg("pair");
 
-    LiquidityTransformer::default().forward_liquidity(purse);
+    LiquidityTransformer::default().forward_liquidity(pair);
 }
 
 #[no_mangle]
@@ -154,6 +154,22 @@ fn request_refund() {
 
     let ret: (U256, U256) = LiquidityTransformer::default().request_refund(caller_purse);
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
+}
+
+#[no_mangle]
+fn fund_contract() {
+    let purse: URef = runtime::get_named_arg("purse");
+    let amount: U512 = runtime::get_named_arg("amount");
+
+    LiquidityTransformer::default().fund_contract(purse, amount);
+}
+
+#[no_mangle]
+fn contract_read_only_purse() {
+    runtime::ret(
+        CLValue::from_t(data::self_purse().with_access_rights(AccessRights::READ_ADD))
+            .unwrap_or_revert(),
+    );
 }
 
 fn get_entry_points() -> EntryPoints {
@@ -217,7 +233,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "forward_liquidity",
-        vec![Parameter::new("purse", URef::cl_type())],
+        vec![Parameter::new("pair", Key::cl_type())],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -257,11 +273,28 @@ fn get_entry_points() -> EntryPoints {
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "fund_contract",
+        vec![
+            Parameter::new("purse", URef::cl_type()),
+            Parameter::new("amount", U512::cl_type()),
+        ],
+        <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "contract_read_only_purse",
+        vec![],
+        URef::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
     entry_points
 }
 
 #[no_mangle]
-fn call() {
+pub extern "C" fn call() {
     // Store contract in the account's named keys. Contract name must be same for all new versions of the contracts
     let contract_name: alloc::string::String = runtime::get_named_arg("contract_name");
 
@@ -273,12 +306,20 @@ fn call() {
         let (contract_hash, _): (ContractHash, _) =
             storage::add_contract_version(package_hash, get_entry_points(), Default::default());
 
+        // Payable
+        let caller_purse = account::get_main_purse();
+        let purse: URef = system::create_purse();
+        let amount: U512 = runtime::get_named_arg("amount");
+        if amount != 0.into() {
+            system::transfer_from_purse_to_purse(caller_purse, purse, amount, None)
+                .unwrap_or_revert();
+        }
+
         let wise_token: Key = runtime::get_named_arg("wise_token");
         let scspr: Key = runtime::get_named_arg("scspr");
         let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let wcspr: Key = runtime::get_named_arg("wcspr");
-        let purse: URef = system::create_purse();
         let constructor_args = runtime_args! {
             "wise_token" => wise_token,
             "scspr" => scspr,
