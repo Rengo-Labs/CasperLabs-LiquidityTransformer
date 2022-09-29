@@ -3,6 +3,7 @@
 Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `Liquidity Transformer` Contract for the CasperLabs platform.
 d
 ## NOTE:- Following repositories are required to be placed with this project in the same root directory and names of the repositories should be same as in the "Makefile"
+## NOTE:- Investment days can be adjusted by changing the constant value 'pub const INVESTMENT_DAYS: u8 = 15;' in the following file (./CasperLabs-Wise-LiquidityTransformer/liquidity_transformer/liquidity_transformer_crate/src/data.rs)
 
 1. [Uniswap Core Contracts](https://github.com/Scytalelabs-official/CasperLabs-UniswapV2-core)
 2. [Uniswap Router Contracts](https://github.com/Scytalelabs-official/Casperlabs-UniswapRouter)
