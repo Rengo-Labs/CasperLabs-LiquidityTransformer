@@ -90,6 +90,7 @@ fn constructor() {
     );
 }
 
+/// @notice Use to set master address value
 #[no_mangle]
 fn set_master() {
     let master_address: Key = runtime::get_named_arg("master_address");
@@ -97,12 +98,16 @@ fn set_master() {
     Scspr::default().set_master(master_address);
 }
 
+/// @notice Use to set wise address value
 #[no_mangle]
 fn set_wise() {
     let wise: Key = runtime::get_named_arg("wise");
     Scspr::default().set_wise(wise);
 }
 
+/// @notice Use to deposit amount into the scspr token
+/// @param 'amount' deposit amount value
+/// @param 'purse' caller purse to deposit value from
 #[no_mangle]
 fn deposit() {
     let amount: U256 = runtime::get_named_arg("amount");
@@ -110,6 +115,9 @@ fn deposit() {
     Scspr::default().deposit(amount, purse);
 }
 
+/// @notice Use to withdraw amount fromt the scspr token
+/// @param 'amount' withdraw amount value
+/// @param 'purse' caller purse to withdraw value into
 #[no_mangle]
 fn withdraw() {
     let amount: U256 = runtime::get_named_arg("amount");
@@ -117,6 +125,9 @@ fn withdraw() {
     Scspr::default().withdraw(amount, purse);
 }
 
+/// @notice Use to mint tokens to the caller address
+/// @param 'amount' mint amount value
+/// @param 'purse' caller purse to deposit value from
 #[no_mangle]
 fn liquidity_deposit() {
     let amount: U256 = runtime::get_named_arg("amount");
@@ -124,6 +135,9 @@ fn liquidity_deposit() {
     Scspr::default().liquidity_deposit(purse, amount);
 }
 
+/// @notice Creates initial liquidity on uniswap by forwarding
+///     reserved tokens equivalent to CSPR contributed to the contract
+/// @dev check add_liquidity documentation
 #[no_mangle]
 fn form_liquidity() {
     let pair: Key = runtime::get_named_arg("pair");
@@ -132,17 +146,25 @@ fn form_liquidity() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice Used to renounce ownership to zero address
 #[no_mangle]
 fn renounce_ownership() {
     Scspr::default().renounce_ownership();
 }
 
+/// @notice Used to forward ownership to new_master
+/// @param 'new_master' address to forward ownership
 #[no_mangle]
 fn forward_ownership() {
     let new_master: Key = runtime::get_named_arg("new_master");
     Scspr::default().forward_ownership(new_master);
 }
 
+/// @notice Used to deposit value from contract
+///     and transfer pair amount to this contract address
+/// @param 'purse' caller purse to deposit value into contract purse
+/// @param 'amount' value to be deposited
+/// @param 'token_amount' amount of pair tokens to be transfer into contract
 #[no_mangle]
 fn add_lp_tokens() {
     let purse: URef = runtime::get_named_arg("purse");
@@ -151,6 +173,9 @@ fn add_lp_tokens() {
     Scspr::default().add_lp_tokens(purse, amount, token_amount);
 }
 
+/// @dev used to define token and make set_token_defined true
+/// @param 'wise_token' address to call get_synthetic_token_address
+///     and check with this scspr token
 #[no_mangle]
 fn define_token() {
     let wise_token: Key = runtime::get_named_arg("wise_token");
@@ -158,6 +183,9 @@ fn define_token() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @dev used to define transfer helper and make set_helper_defined true
+/// @param 'transfer_helper' address to call get_transfer_invoker_address
+///     and check with this scspr token that either it is the tansfer_invoker or not
 #[no_mangle]
 fn define_helper() {
     let transfer_helper: Key = runtime::get_named_arg("transfer_helper");
@@ -165,12 +193,18 @@ fn define_helper() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @dev used to create_pair by calling factory create pair
+///     and make wcspr & scspr pair
+/// @param 'pair' address to make pair on
 #[no_mangle]
 fn create_pair() {
     let pair: Key = runtime::get_named_arg("pair");
     Scspr::default().create_pair(pair);
 }
 
+/// @dev This function is to mint token against the address that user provided
+/// @param `to` A Key that holds the account address of the user
+/// @param `amount` A U256 that holds the amount for mint
 #[no_mangle]
 fn mint() {
     let recipient: Key = runtime::get_named_arg("recipient");
@@ -179,6 +213,9 @@ fn mint() {
     Scspr::default().mint(recipient, amount)
 }
 
+/// @notice This function is to approve tokens against the address that user provided
+/// @param `spender` A Key that holds the account address of the user
+/// @param `amount` A U256 that holds the amount for approve
 #[no_mangle]
 fn approve() {
     let spender: Key = runtime::get_named_arg("spender");
@@ -187,6 +224,9 @@ fn approve() {
     Scspr::default().approve(spender, amount);
 }
 
+/// @notice This function is to transfer tokens against the address that user provided
+/// @param `recipient` A Key that holds the account address of the user
+/// @param `amount` A U256 that holds the amount for transfer
 #[no_mangle]
 fn transfer() {
     let recipient: Key = runtime::get_named_arg("recipient");
@@ -196,6 +236,10 @@ fn transfer() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice This function is to transfer tokens against the address that has been approved before by owner
+/// @param `owner` A Key that holds the account address of the user
+/// @param `recipient` A Key that holds the account address of the user
+/// @param `amount` A U256 that holds the amount for transfer
 #[no_mangle]
 fn transfer_from() {
     let owner: Key = runtime::get_named_arg("owner");
@@ -206,6 +250,8 @@ fn transfer_from() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice This function is to return the Balance  of owner against the address that user provided
+/// @param `owner` A Key that holds the account address of the user against which user wants to get balance
 #[no_mangle]
 fn balance_of() {
     let owner: Key = runtime::get_named_arg("owner");
@@ -213,6 +259,8 @@ fn balance_of() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice Used for sending funds to contract
+/// @dev used as a fallback function
 #[no_mangle]
 fn fund_contract() {
     let purse: URef = runtime::get_named_arg("purse");
@@ -221,7 +269,7 @@ fn fund_contract() {
     Scspr::default().fund_contract(purse, amount);
 }
 
-// Synthetic token
+// Synthetic token entrypoints
 
 #[no_mangle]
 fn wcspr() {
@@ -301,8 +349,6 @@ fn get_liquidity_percent() {
     let ret: U256 = Scspr::default().get_liquidity_percent();
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
-
-// Synthetic token
 
 #[no_mangle]
 fn master_address() {
