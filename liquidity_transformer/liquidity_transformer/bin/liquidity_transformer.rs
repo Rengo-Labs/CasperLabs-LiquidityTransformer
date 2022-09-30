@@ -76,6 +76,7 @@ fn constructor() {
     );
 }
 
+/// @dev Used to initialize WISE_TOKEN, PAIR and SCSPR contract addresses
 #[no_mangle]
 fn set_settings() {
     let wise_token: Key = runtime::get_named_arg("wise_token");
@@ -85,11 +86,14 @@ fn set_settings() {
     LiquidityTransformer::default().set_settings(wise_token, uniswap_pair, synthetic_cspr);
 }
 
+/// @notice Use to renounce_keeper and can be only called by keeper
+/// @dev Sets settings_keeper to zero address
 #[no_mangle]
 fn renounce_keeper() {
     LiquidityTransformer::default().renounce_keeper();
 }
 
+/// @dev Performs reservation of WISE tokens with CSPR
 #[no_mangle]
 fn reserve_wise() {
     let investment_mode: u8 = runtime::get_named_arg("investment_mode");
@@ -99,6 +103,10 @@ fn reserve_wise() {
     LiquidityTransformer::default().reserve_wise(investment_mode, msg_value, caller_purse);
 }
 
+/// @notice Allows reservation of WISE tokens with other ERC20 tokens
+/// @dev this will require LT contract to be approved as spender
+/// @param token_address address of an ERC20 token to use
+/// @param token_amount amount of tokens to use for reservation
 #[no_mangle]
 fn reserve_wise_with_token() {
     let token_address: Key = runtime::get_named_arg("token_address");
@@ -114,6 +122,9 @@ fn reserve_wise_with_token() {
     );
 }
 
+/// @notice Creates initial liquidity on uniswap by forwarding
+///     reserved tokens equivalent to CSPR contributed to the contract
+/// @dev check add_liquidity documentation
 #[no_mangle]
 fn forward_liquidity() {
     let pair: Key = runtime::get_named_arg("pair");
@@ -121,11 +132,19 @@ fn forward_liquidity() {
     LiquidityTransformer::default().forward_liquidity(pair);
 }
 
+/// @notice Allows to mint all the tokens
+///     from investor and referrer perspectives
+/// @dev can be called after forward_liquidity()
 #[no_mangle]
 fn get_my_tokens() {
     LiquidityTransformer::default().get_my_tokens();
 }
 
+/// @notice Allows to mint tokens for specific investor address
+/// @dev aggregades investors tokens across all investment days
+///     and uses STAKEABLE_CONTRACT instance to mint all the WISE tokens
+/// @param investor_address requested investor calculation address
+/// @return _payout amount minted to the investors address
 #[no_mangle]
 fn payout_investor_address() {
     let investor_address: Key = runtime::get_named_arg("investor_address");
@@ -134,6 +153,10 @@ fn payout_investor_address() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice Prepares path variable for uniswap to exchange tokens
+/// @dev used in reserve_wise_with_token() swap_exact_tokens_for_tokens call
+/// @param token_address ERC20 token address to be swapped for CSPR
+/// @return _path that is used to swap tokens for CSPR on uniswap
 #[no_mangle]
 fn prepare_path() {
     let token_address: Key = runtime::get_named_arg("token_address");
@@ -142,12 +165,16 @@ fn prepare_path() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice Shows current day of WiseToken
+/// @dev value is fetched from STAKEABLE_CONTRACT
+/// @return iteration day since WISE inception
 #[no_mangle]
 fn current_stakeable_day() {
     let ret: u64 = LiquidityTransformer::default().current_stakeable_day();
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+// @notice Allows refunds if funds are stuck
 #[no_mangle]
 fn request_refund() {
     let caller_purse: URef = runtime::get_named_arg("caller_purse");
@@ -156,6 +183,8 @@ fn request_refund() {
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
+/// @notice Used for sending funds to contract
+/// @dev used as a fallback function
 #[no_mangle]
 fn fund_contract() {
     let purse: URef = runtime::get_named_arg("purse");
@@ -164,6 +193,7 @@ fn fund_contract() {
     LiquidityTransformer::default().fund_contract(purse, amount);
 }
 
+/// @dev used to fetch purse of contract for sending funds
 #[no_mangle]
 fn contract_read_only_purse() {
     runtime::ret(

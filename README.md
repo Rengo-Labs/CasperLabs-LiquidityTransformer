@@ -1,13 +1,13 @@
 # Liquidity Transformer - Casper Blockchain
 
 Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `Liquidity Transformer` Contract for the CasperLabs platform.
-d
-## NOTE:- Following repositories are required to be placed with this project in the same root directory and names of the repositories should be same as in the "Makefile"
+
+## NOTE:- Following repositories are required to place with this project also please make sure names of the repositories should be same as in make file
 ## NOTE:- Investment days can be adjusted by changing the constant value 'pub const INVESTMENT_DAYS: u8 = 15;' in the following file (./CasperLabs-Wise-LiquidityTransformer/liquidity_transformer/liquidity_transformer_crate/src/data.rs)
 
-1. [Uniswap Core Contracts](https://github.com/Scytalelabs-official/CasperLabs-UniswapV2-core)
-2. [Uniswap Router Contracts](https://github.com/Scytalelabs-official/Casperlabs-UniswapRouter)
-3. [Stakeable Token Wise Contracts](https://github.com/Scytalelabs-official/CasperLabs-Wise-StakeableToken)
+1. [Uniswap core contracts](https://github.com/Scytalelabs-official/CasperLabs-UniswapV2-core)
+2. [Uniswap router contracts](https://github.com/Scytalelabs-official/Casperlabs-UniswapRouter)
+3. [Stakeable token wise contracts](https://github.com/Scytalelabs-official/CasperLabs-Wise-StakeableToken)
 
 ## Steps
 
@@ -35,16 +35,14 @@ There are 4 contracts in this folder
 
 You can install the required software by issuing the following commands. If you are on an up-to-date Casper node, you probably already have all of the prerequisites installed so you can skip this step.
 
-**Note:** If any command fails try agin by restart the terminal to reset the enviornment variable.
-
 ```bash
 # Update package repositories
 sudo apt update
 # Install the command-line JSON processor
 sudo apt install jq -y
 # Install rust
+# Choose cutomize intallation to install nightly version
 # Install the nightly version (by default stable toolchain is installed)
-# And proceed with the installation (default)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 rustup install nightly
 # Check that nightly toolchain version is installed(this will list stable and nightly versions)
@@ -82,14 +80,12 @@ casper-client <command> --help
 
 ```bash
 # Create keys
-casper-client keygen <TARGET DIRECTORY NAME>
+casper-client keygen <TARGET DIRECTORY>
 ```
-**Note:** Choose the name of directory where generated keys will be stored.
 
+#### Install
 
-#### NOTE
-
-Make sure `wasm32-unknown-unknown `is installed.
+Make sure `wasm32-unknown-unknown` is installed.
 
 ```
 make prepare
@@ -98,9 +94,11 @@ make prepare
 It's also recommended to have [wasm-strip](https://github.com/WebAssembly/wabt)
 available in your PATH to reduce the size of compiled Wasm.
 
+### NOTE:- !IMPORTANT! 'make prepare' command should also be excuted seperately for 'CasperLabs-Wise-StakeableToken' by going in the contract folder and execute above command
+
 #### Build Smart Contract
 
-Run this command to build Smart Contract of the Liquidity Transformer Repository.
+Run this command to build Smart Contract.
 
 ```
 make build-contract
@@ -108,7 +106,7 @@ make build-contract
 
 #### Build All Smart Contracts
 
-Run this command in root folder to build all Smart Contracts of Uniswap Core, Uniswap Router, Stakeable Token contracts and Liquidity Transformer .
+Run this command in main folder to build all Smart Contracts.
 
 ```
 make build-all
