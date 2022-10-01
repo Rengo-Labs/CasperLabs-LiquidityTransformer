@@ -1,5 +1,5 @@
 [package]
-name = "purse-proxy"
+name = "session-code-lt"
 version = "0.1.0"
 edition = "2018"
 
@@ -9,8 +9,8 @@ casper-types = "1.5.0"
 num-traits = "0.2.15"
 
 [[bin]]
-name = "purse-proxy"
-path = "src/main.rs"
+name = "session-code-lt"
+path = "bin/main.rs"
 bench = false
 doctest = false
 test = false

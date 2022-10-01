@@ -10,13 +10,7 @@ casper-contract = "1.4.4"
 casper-types = "1.5.0"
 casper-engine-test-support = "2.2.0"
 casperlabs-test-env = "0.2.0"
-casperlabs-contract-utils = "0.1.2"
 hex = "0.4.3"
-blake2 = "0.9.1"
-rand = "0.8.5"
-more-asserts = "0.2.1"
-renvm-sig = "0.1.1"
-cryptoxide = "0.3.3"
 num-traits = "0.2.15"
 
 [features]
