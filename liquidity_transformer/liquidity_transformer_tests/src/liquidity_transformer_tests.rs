@@ -461,7 +461,7 @@ fn add_liquidity(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn initialize_flow(
+fn forward_liquidity(
     env: &TestEnv,
     lt: &TestContract,
     owner: AccountHash,
@@ -471,7 +471,8 @@ fn initialize_flow(
     scspr: &TestContract,
     uniswap_factory: TestContract,
     helper: TestContract,
-) {
+    uniswap_pair_wise: TestContract,
+) -> u64 {
     scspr.call_contract(
         owner,
         "set_wise",
@@ -548,6 +549,30 @@ fn initialize_flow(
         },
         now(),
     );
+    // Using session code as caller of purse is required for reserving wise
+    session_code_call(
+        &env,
+        owner,
+        runtime_args! {
+            "package_hash" => Key::Hash(lt.package_hash()),
+            "entrypoint" => "reserve_wise",
+            "investment_mode" => 1_u8,
+            "amount" => TWOTHOUSEND_CSPR
+        },
+        now(),
+    );
+    // Forward liquidity to be done after investment days
+    const INVESTMENT_DAY: u64 = 20; // Some random day after investment days passed
+    const INVESTMENT_DAY_TIME: u64 = INVESTMENT_DAY * 86400 * 1000;
+    lt.call_contract(
+        owner,
+        "forward_liquidity",
+        runtime_args! {
+            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
+        },
+        now() + INVESTMENT_DAY_TIME,
+    );
+    now() + INVESTMENT_DAY_TIME
 }
 
 #[test]
@@ -741,7 +766,14 @@ fn test_forward_liquidity() {
         helper,
         uniswap_pair_wise,
     ) = deploy();
-    initialize_flow(
+    let uniswap_swaped: bool = liquidity_transformer
+        .query_dictionary("globals", "uniswap_swaped".into())
+        .unwrap_or_default();
+    assert!(
+        !uniswap_swaped,
+        "Reserved tokens equivalent to CSPR contributed already forwarded"
+    );
+    forward_liquidity(
         &env,
         &liquidity_transformer,
         owner,
@@ -751,36 +783,7 @@ fn test_forward_liquidity() {
         &scspr,
         uniswap_factory,
         helper,
-    );
-    // Using session code as caller of purse is required for reserving wise
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
-        },
-        now(),
-    );
-    let uniswap_swaped: bool = liquidity_transformer
-        .query_dictionary("globals", "uniswap_swaped".into())
-        .unwrap_or_default();
-    assert!(
-        !uniswap_swaped,
-        "Reserved tokens equivalent to CSPR contributed already forwarded"
-    );
-    // Forward liquidity to be done after investment days
-    const INVESTMENT_DAY: u64 = 20; // Some random day after investment days passed
-    const INVESTMENT_DAY_TIME: u64 = INVESTMENT_DAY * 86400 * 1000;
-    liquidity_transformer.call_contract(
-        owner,
-        "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
-        now() + INVESTMENT_DAY_TIME,
+        uniswap_pair_wise,
     );
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
@@ -807,7 +810,7 @@ fn test_payout_investor_address() {
         helper,
         uniswap_pair_wise,
     ) = deploy();
-    initialize_flow(
+    let time = forward_liquidity(
         &env,
         &liquidity_transformer,
         owner,
@@ -817,29 +820,7 @@ fn test_payout_investor_address() {
         &scspr,
         uniswap_factory,
         helper,
-    );
-    // Using session code as caller of purse is required for reserving wise
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
-        },
-        now(),
-    );
-    // Forward liquidity to be done after investment days
-    const INVESTMENT_DAY: u64 = 20; // Some random day after investment days passed
-    const INVESTMENT_DAY_TIME: u64 = INVESTMENT_DAY * 86400 * 1000;
-    liquidity_transformer.call_contract(
-        owner,
-        "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
-        now() + INVESTMENT_DAY_TIME,
+        uniswap_pair_wise,
     );
     session_code_call(
         &env,
@@ -849,7 +830,7 @@ fn test_payout_investor_address() {
             "entrypoint" => "payout_investor_address",
             "investor_address" => Key::Account(owner)
         },
-        now() + INVESTMENT_DAY_TIME,
+        time,
     );
     let ret: U256 = session_code_result(&env, owner);
     assert_eq!(ret, 2640002000000000u64.into()); // calculated amount in contract
@@ -871,7 +852,7 @@ fn test_get_my_tokens() {
         helper,
         uniswap_pair_wise,
     ) = deploy();
-    initialize_flow(
+    let time = forward_liquidity(
         &env,
         &liquidity_transformer,
         owner,
@@ -881,40 +862,13 @@ fn test_get_my_tokens() {
         &scspr,
         uniswap_factory,
         helper,
-    );
-    // Using session code as caller of purse is required for reserving wise
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
-        },
-        now(),
-    );
-    // Forward liquidity to be done after investment days
-    const INVESTMENT_DAY: u64 = 20; // Some random day after investment days passed
-    const INVESTMENT_DAY_TIME: u64 = INVESTMENT_DAY * 86400 * 1000;
-    liquidity_transformer.call_contract(
-        owner,
-        "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
-        now() + INVESTMENT_DAY_TIME,
+        uniswap_pair_wise,
     );
     let balance: U256 = wise
         .query_dictionary("balances", key_to_str(&Key::Account(owner)))
         .unwrap_or_default();
     assert_eq!(balance, 0.into(), "Already have some wise tokens");
-    liquidity_transformer.call_contract(
-        owner,
-        "get_my_tokens",
-        runtime_args! {},
-        now() + INVESTMENT_DAY_TIME,
-    );
+    liquidity_transformer.call_contract(owner, "get_my_tokens", runtime_args! {}, time);
     let balance: U256 = wise
         .query_dictionary("balances", key_to_str(&Key::Account(owner)))
         .unwrap_or_default();
