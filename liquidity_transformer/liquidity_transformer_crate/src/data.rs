@@ -57,7 +57,7 @@ impl Globals {
     }
 
     pub fn set<T: ToBytes + CLTyped>(&self, owner: &str, value: T) {
-        self.dict.set(owner.to_string().as_str(), value);
+        self.dict.set(owner, value);
     }
 }
 

@@ -29,7 +29,7 @@ prepare:
 
 build-contract:
     # Building transformer contracts
-	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p purse-proxy -p proxy_liquidity_transformer -p session-code-scspr --target wasm32-unknown-unknown
+	cargo build --release -p liquidity_transformer -p synthetic_token -p scspr -p session-code-lt -p session-code-scspr --target wasm32-unknown-unknown
 
 build-all:
     # Building transformer contracts
@@ -88,9 +88,9 @@ copy-wasm-file:
 
 clean:
 	cargo clean
-	rm -rf liquidity_transformer_tests/wasm/*.wasm
-	rm -rf scspr_tests/wasm/*.wasm
-	rm -rf synthetic_token_tests/wasm/*.wasm
+	rm -rf liquidity_transformer/liquidity_transformer_tests/wasm/*.wasm
+	rm -rf scspr/scspr_tests/wasm/*.wasm
+	rm -rf synthetic_token/synthetic_token_tests/wasm/*.wasm
 	rm -rf Cargo.lock
 
 clean-all:

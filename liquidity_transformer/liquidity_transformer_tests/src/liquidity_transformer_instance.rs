@@ -41,25 +41,6 @@ impl LIQUIDITYTRANSFORMERInstance {
         )
     }
 
-    pub fn proxy(
-        env: &TestEnv,
-        contract_name: &str,
-        sender: AccountHash,
-        liquidity_transformer: Key,
-        time: u64,
-    ) -> TestContract {
-        TestContract::new(
-            env,
-            "proxy-liquidity-transformer.wasm",
-            contract_name,
-            sender,
-            runtime_args! {
-                "liquidity_transformer" => liquidity_transformer,
-            },
-            time,
-        )
-    }
-
     pub fn reserve_wise(
         &self,
         sender: AccountHash,
