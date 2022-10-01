@@ -133,8 +133,3 @@ clippy:
 git-clean:
 	git rm -rf --cached .
 	git add .
-
-dev:
-	make build-contract
-	make copy-wasm-file
-	make test-liquidity-transformer
