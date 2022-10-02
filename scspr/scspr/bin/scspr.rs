@@ -12,7 +12,7 @@ use casper_types::{
     EntryPointAccess, EntryPointType, EntryPoints, Group, Key, Parameter, RuntimeArgs, URef, U256,
     U512,
 };
-use casperlabs_contract_utils::{set_key, ContractContext, OnChainContractStorage};
+use casperlabs_contract_utils::{ContractContext, OnChainContractStorage};
 use scspr_crate::{
     self,
     synthetic_token_crate::{
@@ -23,8 +23,6 @@ use scspr_crate::{
     },
     SCSPR,
 };
-
-const JS_RESULT: &str = "result";
 
 #[derive(Default)]
 struct Scspr(OnChainContractStorage);
@@ -105,7 +103,7 @@ fn set_wise() {
     Scspr::default().set_wise(wise);
 }
 
-/// @notice Use to deposit amount into the scspr token
+/// @notice Use to deposit amount into the scspr contract
 /// @param 'amount' deposit amount value
 /// @param 'purse' caller purse to deposit value from
 #[no_mangle]
@@ -115,7 +113,7 @@ fn deposit() {
     Scspr::default().deposit(amount, purse);
 }
 
-/// @notice Use to withdraw amount fromt the scspr token
+/// @notice Use to withdraw amount from the scspr withdraw
 /// @param 'amount' withdraw amount value
 /// @param 'purse' caller purse to withdraw value into
 #[no_mangle]
@@ -309,21 +307,9 @@ fn get_synthetic_balance() {
 }
 
 #[no_mangle]
-fn get_synthetic_balance_js_client() {
-    let ret: U256 = Scspr::default().get_synthetic_balance();
-    set_key(JS_RESULT, ret);
-}
-
-#[no_mangle]
 fn get_wrapped_balance() {
     let ret: U256 = Scspr::default().get_wrapped_balance();
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
-}
-
-#[no_mangle]
-fn get_wrapped_balance_js_client() {
-    let ret: U256 = Scspr::default().get_wrapped_balance();
-    set_key(JS_RESULT, ret);
 }
 
 #[no_mangle]
@@ -610,23 +596,9 @@ fn get_entry_points() -> EntryPoints {
         EntryPointType::Contract,
     ));
     entry_points.add_entry_point(EntryPoint::new(
-        "get_synthetic_balance_js_client",
-        vec![],
-        <()>::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-    entry_points.add_entry_point(EntryPoint::new(
         "get_wrapped_balance",
         vec![],
         U256::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-    entry_points.add_entry_point(EntryPoint::new(
-        "get_wrapped_balance_js_client",
-        vec![],
-        <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));

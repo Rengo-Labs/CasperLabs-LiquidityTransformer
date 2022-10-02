@@ -1,17 +1,12 @@
 use std::time::SystemTime;
 
-use casper_types::{account::AccountHash, runtime_args, Key, RuntimeArgs, U256, U512};
+use casper_types::{
+    account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, U256, U512,
+};
 use casperlabs_test_env::{TestContract, TestEnv};
 use num_traits::cast::AsPrimitive;
 
 use crate::scspr_instance::SCSPRInstance;
-
-pub fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
-}
 
 // TOTAL MOTES AVAILABLE 99_999_999_000_000_00
 
@@ -22,6 +17,41 @@ const ONE_CSPR: U256 = U256([1_000_000_000, 0, 0, 0]);
 const TWOTHOUSEND_CSPR: U256 = U256([2_000_000_000_000, 0, 0, 0]);
 const FIFTY_CSPR: U256 = U256([50_000_000_000, 0, 0, 0]);
 const TWOHUNDRET_CSPR: U256 = U256([200_000_000_000, 0, 0, 0]);
+
+pub fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+}
+
+pub fn key_to_str(key: &Key) -> String {
+    match key {
+        Key::Account(account) => account.to_string(),
+        Key::Hash(package) => hex::encode(package),
+        _ => "".into(),
+    }
+}
+
+pub fn session_code_call(
+    env: &TestEnv,
+    sender: AccountHash,
+    runtime_args: RuntimeArgs,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "session-code-scspr.wasm",
+        "session-code-scspr",
+        sender,
+        runtime_args,
+        time,
+    )
+}
+
+pub fn session_code_result<T: CLTyped + FromBytes>(env: &TestEnv, sender: AccountHash) -> T {
+    env.query_account_named_key(sender, &["result".into()])
+}
 
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_liquidity_transformer(
@@ -338,10 +368,8 @@ fn add_liquidity_person(
         },
         time,
     );
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "deposit_call",
         person,
         runtime_args! {
             "entrypoint" => "wcspr_deposit",
@@ -375,10 +403,8 @@ fn deposit(
     amount: U512,
     time: u64,
 ) -> TestContract {
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "deposit_call",
         owner,
         runtime_args! {
             "entrypoint" => "deposit",
@@ -396,10 +422,8 @@ fn withdraw(
     amount: U512,
     time: u64,
 ) -> TestContract {
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "deposit_call",
         owner,
         runtime_args! {
             "entrypoint" => "withdraw",
@@ -411,10 +435,8 @@ fn withdraw(
 }
 
 pub fn balance_of(env: &TestEnv, sender: AccountHash, package: Key, owner: Key, time: u64) -> U256 {
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "balance_of_call",
         sender,
         runtime_args! {
             "entrypoint" => "balance_of",
@@ -423,7 +445,7 @@ pub fn balance_of(env: &TestEnv, sender: AccountHash, package: Key, owner: Key, 
         },
         time,
     );
-    env.query_account_named_key(sender, &["balance".into()])
+    session_code_result(env, sender)
 }
 
 pub fn initialize_system(
@@ -511,7 +533,6 @@ pub fn initialize_system(
         scspr.query_named_key::<bool>("helper_defined".into()),
         "Helper not defined"
     );
-
     token.call_contract(owner, "create_pair", runtime_args! {}, now());
     scspr.call_contract(
         owner,
@@ -521,7 +542,6 @@ pub fn initialize_system(
         },
         now(),
     );
-
     let lt = deploy_liquidity_transformer(
         env,
         owner,
@@ -534,10 +554,8 @@ pub fn initialize_system(
         now(),
     );
     // Using session code as caller of purse is required for reserving wise
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "set_liquidity_transfomer_call",
         owner,
         runtime_args! {
             "entrypoint" => "set_liquidity_transfomer",
@@ -548,10 +566,8 @@ pub fn initialize_system(
     );
     // NOW CALLS TIME SHOULD BE IN ADVANCED 'TIME'
     // Using session code as caller of purse is required for reserving wise
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "reserve_wise_call",
         person,
         runtime_args! {
             "entrypoint" => "reserve_wise",
@@ -561,7 +577,6 @@ pub fn initialize_system(
         },
         now() + TIME,
     );
-
     let now = now() + (TIME * 150_000);
     lt.call_contract(
         person,
@@ -571,28 +586,30 @@ pub fn initialize_system(
         },
         now,
     );
-
-    scspr.call_contract(
+    session_code_call(
+        env,
         owner,
-        "get_wrapped_balance_js_client",
-        runtime_args! {},
+        runtime_args! {
+            "entrypoint" => "get_wrapped_balance",
+            "package_hash" => Key::Hash(scspr.package_hash()),
+        },
         now,
     );
-    let wrapped_balance_after: U256 = scspr.query_named_key("result".into());
-    scspr.call_contract(
+    let wrapped_balance_after: U256 = session_code_result(env, owner);
+    session_code_call(
+        env,
         owner,
-        "get_synthetic_balance_js_client",
-        runtime_args! {},
+        runtime_args! {
+            "entrypoint" => "get_synthetic_balance",
+            "package_hash" => Key::Hash(scspr.package_hash()),
+        },
         now,
     );
-    let synthetic_balance_after: U256 = scspr.query_named_key("result".into());
+    let synthetic_balance_after: U256 = session_code_result(env, owner);
     lt.call_contract(person, "get_my_tokens", runtime_args! {}, now);
     let wrapped: Key = scspr.query_named_key("wcspr".into());
-
-    TestContract::new(
+    session_code_call(
         env,
-        "session-code-scspr.wasm",
-        "wcspr_balance_of_call",
         owner,
         runtime_args! {
             "entrypoint" => "balance_of",
@@ -601,8 +618,7 @@ pub fn initialize_system(
         },
         now,
     );
-    let balance_of_wcspr: U256 = env.query_account_named_key(owner, &["balance".into()]);
-
+    let balance_of_wcspr: U256 = session_code_result(env, owner);
     assert_eq!(
         synthetic_balance_after, balance_of_wcspr,
         "synthetic_balance_after & balance_of_wcspr are not equal"
@@ -611,7 +627,6 @@ pub fn initialize_system(
         wrapped_balance_after, balance_of_wcspr,
         "wrapped_balance_after & balance_of_wcspr are not equal"
     );
-
     (scspr, wcspr, uniswap_router, uniswap_pair, now)
 }
 
@@ -717,9 +732,7 @@ fn master_add_lp_tokens_should_work_correctly() {
     );
     let (scspr, wcspr, uniswap_router, uniswap_pair, now) =
         initialize_system(&env, owner, TWOTHOUSEND_CSPR, user4);
-
     const ADD_LIQUIDITY_AMOUNT: U256 = FIFTY_CSPR;
-
     deposit(
         &env,
         user1,
@@ -727,7 +740,6 @@ fn master_add_lp_tokens_should_work_correctly() {
         <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(ADD_LIQUIDITY_AMOUNT),
         now,
     );
-
     add_liquidity_person(
         &env,
         ADD_LIQUIDITY_AMOUNT,
@@ -738,10 +750,8 @@ fn master_add_lp_tokens_should_work_correctly() {
         &uniswap_pair,
         now,
     );
-
     const PROVIDE_AMOUNT: U256 = TWOHUNDRET_CSPR;
     const TEN_MOTE: U256 = U256([10, 0, 0, 0]);
-
     deposit(
         &env,
         owner,
@@ -749,7 +759,6 @@ fn master_add_lp_tokens_should_work_correctly() {
         <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(PROVIDE_AMOUNT),
         now,
     );
-
     add_liquidity_person(
         &env,
         PROVIDE_AMOUNT,
@@ -760,7 +769,6 @@ fn master_add_lp_tokens_should_work_correctly() {
         &uniswap_pair,
         now,
     );
-
     let lp_token_user: U256 = balance_of(
         &env,
         owner,
@@ -784,11 +792,8 @@ fn master_add_lp_tokens_should_work_correctly() {
         Key::Hash(scspr.package_hash()),
         now,
     );
-
-    TestContract::new(
+    session_code_call(
         &env,
-        "session-code-scspr.wasm",
-        "add_lp_tokens_call",
         owner,
         runtime_args! {
             "entrypoint" => "add_lp_tokens",
@@ -798,7 +803,6 @@ fn master_add_lp_tokens_should_work_correctly() {
         },
         now,
     );
-
     let lp_token_contract_after: U256 = balance_of(
         &env,
         owner,
@@ -806,15 +810,10 @@ fn master_add_lp_tokens_should_work_correctly() {
         Key::Hash(scspr.package_hash()),
         now,
     );
-
     let sum: U256 = lp_token_user + lp_token_contract_before;
-
     let difference: U256 = lp_token_contract_after - sum;
-
     assert_eq!(difference, TEN_MOTE, "difference is not TEN_MOTE");
-
     let evaluation_before: U256 = scspr.query_named_key("current_evaluation".into());
-
     deposit(
         &env,
         user2,
@@ -822,7 +821,6 @@ fn master_add_lp_tokens_should_work_correctly() {
         <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(TEN_MOTE),
         now,
     );
-
     withdraw(
         &env,
         user2,
@@ -830,9 +828,7 @@ fn master_add_lp_tokens_should_work_correctly() {
         <casper_types::U256 as AsPrimitive<casper_types::U512>>::as_(TEN_MOTE),
         now,
     );
-
     let evaluation_after: U256 = scspr.query_named_key("current_evaluation".into());
-
     let lp_token_contract_end = balance_of(
         &env,
         owner,
@@ -840,10 +836,8 @@ fn master_add_lp_tokens_should_work_correctly() {
         Key::Hash(scspr.package_hash()),
         now,
     );
-
     let second_difference: U256 = lp_token_contract_end - lp_token_contract_after;
     let third_difference: U256 = evaluation_after - evaluation_before;
-
-    assert_eq!(second_difference, 0.into(), "Unequal difference");
-    assert!(third_difference > 0.into(), "Third Difference is 0");
+    assert_eq!(second_difference, 0.into(), "Second Difference is 0");
+    assert_eq!(third_difference, 0.into(), "Third Difference is 0");
 }
