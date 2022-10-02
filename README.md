@@ -1,6 +1,6 @@
 # Liquidity Transformer - Casper Blockchain
 
-Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `Liquidity Transformer` Contract for the CasperLabs platform.
+Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `Liquidity Transformer` for the CasperLabs platform.
 
 ## NOTE:- Following repositories are required to place with this project also please make sure names of the repositories should be same as in make file
 ## NOTE:- Investment days can be adjusted by changing the constant value 'pub const INVESTMENT_DAYS: u8 = 15;' in the following file (./CasperLabs-Wise-LiquidityTransformer/liquidity_transformer/liquidity_transformer_crate/src/data.rs)
@@ -11,12 +11,15 @@ Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `L
 
 ## Steps
 
-There are 4 contracts in this folder
+There are 2 contracts in this folder
 
-1. Synthetic CSPR Contract
-2. Synthetic Helper Contract
-3. Synthetic Token Contract
-4. Liquidity Transformer
+1. Liquidity Transformer Contract
+2. Synthetic CSPR Contract
+
+There and 2 crates in this folder
+
+3. Synthetic Helper Crate
+4. Synthetic Token Crate
 
 ## Table of contents
 
@@ -130,7 +133,7 @@ make test
 
 #### Build & Test all contracts
 
-Run this command in main folder to run all contract's Test Cases.
+Run this command in main folder to build all contract and dependent contracts and run test cases.
 
 ```
 make test-all
@@ -153,6 +156,7 @@ sudo casper-client put-deploy \
     --session-arg="uniswap_pair:Key='uniswap-pair-hash'" \
     --session-arg="uniswap_router:Key='uniswap-router-hash'" \
     --session-arg="wcspr:Key='wcspr-hash'" \
+    --session-arg="amount:u512='payable-amount'" \
     --session-arg="contract_name:string='contract_name'"
 ```
 
@@ -161,7 +165,7 @@ sudo casper-client put-deploy \
 Following are the LiquidityTransformer's entry point methods.
 
 - #### set_settings <a id="LiquidityTransformer-set-settings"></a>
-  Only keeper can set wise, scspr, uniswap_pair.
+  Keeper to set address of wise, scspr, uniswap_pair.
 
 Following is the table of parameters.
 
@@ -174,7 +178,7 @@ Following is the table of parameters.
 This method **returns** nothing.
 
 - #### renounce_keeper <a id="LiquidityTransformer-renounce-keeper"></a>
-  Only keeper can set keeper to zero address.
+  Keeper to renounce its keeper status.
 
 Following is the table of parameters.
 
@@ -217,6 +221,7 @@ Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
+| pair           | Key  |
 
 This method **returns** nothing.
 
@@ -252,7 +257,7 @@ Following is the table of parameters.
 
 This method **returns** `Vec<Key>`.
 
-- #### current_wise_day <a id="LiquidityTransformer-current-wise-day "></a>
+- #### current_stakeable_day <a id="LiquidityTransformer-current-stakeable-day "></a>
   Checks the current wise day value
 
 Following is the table of parameters.
@@ -273,94 +278,31 @@ Following is the table of parameters.
 
 This method **returns** Tuple2(U256, U256).
 
-### Deploying SYNTHETIC HELPER contract manually
-
-If you need to deploy the `SYNTHETIC HELPER contract` manually you need to pass the hashes of the other contracts as parameter. Following is the command to deploy the `SYNTHETIC HELPER contract`.
-
-```bash
-sudo casper-client put-deploy \
-    --chain-name chain_name \
-    --node-address http://$NODE_ADDRESS:7777/ \
-    --secret-key path_to_secret_key.pem \
-    --session-path path_to_wasm_file \
-    --payment-amount 10000000000 \
-    --session-arg="public_key:public_key='Public Key In Hex'" \
-```
-
-## Entry Point methods <a id="SyntheticHelper-entry-point-methods"></a>
-
-Following are the SYNTHETIC HELPER's entry point methods.
-
-- #### prepare_path <a id="SyntheticHelper-prepare-path"></a>
-  Prepare two given tokens path
+- #### fund_contract <a id="LiquidityTransformer-fund-contract"></a>
+  Allows to deposit fund to contract.
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-| token_from     | Key  |
-| token_to       | Key  |
-
-This method **returns** nothing.
-
-- #### get_double_root <a id="SyntheticHelper-get-double-root"></a>
-  Doubles the amount given
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| amount         | U256 |
-
-This method **returns** U256.
-
-- #### swap <a id="SyntheticHelper-get-balance-half"></a>
-  Gets the half balance.
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** U512.
-
-- #### get_balance_diff <a id="SyntheticHelper-get-balance-diff"></a>
-  Calculates the difference of caller purse balance and sent parameter
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| amount         | U256 |
-
-This method **returns** U512.
-
-- #### get_balance_of <a id="SyntheticHelper-get-balance-of"></a>
-  Get balance of the token owner
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| token          | Key  |
-| owner          | Key  |
-
-This method **returns** U256.
-
-- #### fund_contract <a id="SyntheticHelper-fund-contract"></a>
-  Funds the contract from the caller purse
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
+| purse          | URef |
 | amount         | U512 |
 
 This method **returns** nothing.
 
-### Deploying SYNTHETIC TOKEN contract manually
+- #### contract_read_only_purse <a id="LiquidityTransformer-contract-read-only-purse"></a>
+  Provide 'READ-ADD' contract purse so it can be used in set_liquidity_transformer or can be used to fund contract bu sending this purse.
 
-If you need to deploy the `SYNTHETIC TOKEN contract` manually you need to pass the some parameters. Following is the command to deploy the `SYNTHETIC TOKEN contract`.
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+
+This method **returns** URef.
+
+### Deploying SCSPR contract manually
+
+If you need to deploy the `Synthetic CSPR` manually you need to pass the some parameters. Following is the command to deploy the `scspr`.
 
 ```bash
 sudo casper-client put-deploy \
@@ -371,38 +313,21 @@ sudo casper-client put-deploy \
     --payment-amount 10000000000 \
     --session-arg="public_key:public_key='Public Key In Hex'" \
     --session-arg="wcspr:Key='wcspr-hash'" \
-    --session-arg="synthetic_helper:Key='scspr-hash'" \
-    --session-arg="uniswap_pair:Key='pair-hash'" \
-    --session-arg="uniswap_router:Key='router-hash'" \
-    --session-arg="erc20:Key='erc20-hash'" \
+    --session-arg="uniswap_pair:Key='uniswap-pair-hash'" \
+    --session-arg="uniswap_router:Key='uniswap-router-hash'" \
+    --session-arg="uniswap_factory:Key='uniswap-factory-hash'" \
+    --session-arg="amount:u512='payable-amount'" \
     --session-arg="contract_name:string='contract_name'"
 ```
 
-## Entry Point methods <a id="SyntheticToken-entry-point-methods"></a>
+## Entry Point methods <a id="Scspr-entry-point-methods"></a>
 
-Following are the SYNTHETIC TOKEN's entry point methods.
+Following are the SCSPR's entry point methods.
 
-- #### set_scspr <a id="SyntheticToken-set-scspr"></a>
-  scspr setter
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| scspr          | Key  |
-
-This method **returns** nothing.
-
-- #### master_address <a id="SyntheticToken-master-address"></a>
-  Gives the master address
+- #### set_master <a id="Scspr-set-master"></a>
+  To set the master address of the contract.
 
 Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** Key.
-
-- #### set_master_address <a id="SyntheticToken-set-master-address"></a>
-  sets the master address
 
 | Parameter Name | Type |
 | -------------- | ---- |
@@ -410,133 +335,235 @@ This method **returns** Key.
 
 This method **returns** nothing.
 
-- #### allow_deposit <a id="SyntheticToken-allow-deposit"></a>
-  Gives the deposit allow status
+- #### set_wise <a id="Scspr-set-wise"></a>
+  To set the wise contract address.
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-
-This method **returns** bool.
-
-- #### set_allow_deposit <a id="SyntheticToken-set-allow-deposit"></a>
-  Sets allow deposit status
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| allow_deposit  | bool |
+| wise           | Key  |
 
 This method **returns** nothing.
 
-- #### token_defined <a id="SyntheticToken-token-defined"></a>
-  Gives the defined token status
+- #### deposit <a id="Scspr-deposit"></a>
+  To deposit amount into the scspr contract
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-
-This method **returns** bool.
-
-- #### set_token_defined <a id="SyntheticToken-set-token-defined"></a>
-  Set the token defined
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| token_defined  | bool |
+| amount         | U256 |
+| purse          | URef |
 
 This method **returns** nothing.
 
-- #### helper_defined <a id="SyntheticToken-helper-defined "></a>
-  Gives the helper defined status
+- #### withdraw <a id="Scspr-withdraw"></a>
+  To withdraw amount from the scspr contract
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-
-This method **returns** bool.
-
-- #### set_helper_defined <a id="SyntheticToken-set-helper-defined"></a>
-  Set the helper defined status
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| helper_defined | bool |
+| amount         | U256 |
+| purse          | URef |
 
 This method **returns** nothing.
 
-- #### uniswap_pair <a id="SyntheticToken-uniswap-pair"></a>
-  Gives the uniswap paur hash
+- #### liquidity_deposit <a id="Scspr-liquidity-deposit"></a>
+  To mint tokens to the caller address
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-
-This method **returns** Key.
-
-- #### set_uniswap_pair <a id="SyntheticToken-set-uniswap-pair"></a>
-  Set the uniswap pair hash
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| uniswap_pair   | Key  |
+| amount         | U256 |
+| purse          | URef |
 
 This method **returns** nothing.
 
-- #### uniswap_router <a id="SyntheticToken-uniswap-router"></a>
-  Gives the router hash
+- #### form_liquidity <a id="Scspr-form-liquidity"></a>
+  Creates initial liquidity on uniswap by forwarding reserved tokens equivalent to CSPR contributed to the contract
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
-
-This method **returns** Key.
-
-- #### set_uniswap_router <a id="SyntheticToken-set-uniswap-router"></a>
-  Set the uniswap router hash
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| uniswap_router | Key  |
-
-This method **returns** nothing.
-
-- #### limit_amount <a id="SyntheticToken-limit-amount"></a>
-  Gives the limit amount
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
+| pair           | Key  |
 
 This method **returns** U256.
 
-- #### limit_amount <a id="SyntheticToken-wcspr"></a>
-  Gives the wcspr hash
+- #### renounce_ownership <a id="Scspr-renounce-ownership"></a>
+  To renounce ownership to zero address
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
+
+This method **returns** nothing.
+
+- #### forward_ownership <a id="Scspr-forward-ownership"></a>
+  To forward ownership to new_master
+
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+| new_master     | Key  |
+
+This method **returns** nothing.
+
+- #### add_lp_tokens <a id="Scspr-add-lp-tokens"></a>
+  To deposit value from contract and transfer pair amount to this contract address
+
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+| purse          | URef |
+| amount         | U256 |
+| token_amount   | U256 |
+
+This method **returns** nothing.
+
+- #### define_token <a id="Scspr-define-token"></a>
+  To define token and make set_token_defined true
+
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+| wise_token     | Key  |
 
 This method **returns** Key.
 
-- #### bypass_enabled <a id="SyntheticToken-bypass-enabled"></a>
-  Gives the bypass enables status
+- #### define_helper <a id="Scspr-define-helper"></a>
+  To define transfer helper and make set_helper_defined true
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| transfer_helper  | Key  |
+
+This method **returns** Key.
+
+- #### create_pair <a id="Scspr-create-pair"></a>
+  To create_pair by calling factory create pair and make wcspr & scspr pair
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| pair             | Key  |
+
+This method **returns** nothing.
+
+- #### mint <a id="Scspr-mint"></a>
+  This function is to mint token against the address that user provided
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| recipient        | Key  |
+| amount           | U256 |
+
+This method **returns** nothing.
+
+- #### approve <a id="Scspr-approve"></a>
+  This function is to approve tokens against the address that user provided
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| spender          | Key  |
+| amount           | U256 |
+
+This method **returns** nothing.
+
+- #### transfer <a id="Scspr-transfer"></a>
+  This function is to transfer tokens against the address that user provided
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| recipient        | Key  |
+| amount           | U256 |
+
+This method **returns** Result<(), u32>.
+
+- #### transfer_from <a id="Scspr-transfer-from"></a>
+  This function is to transfer tokens against the address that has been approved before by owner
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| owner            | Key  |
+| recipient        | Key  |
+| amount           | U256 |
+
+This method **returns** Result<(), u32>.
+
+- #### balance_of <a id="Scspr-balance-of"></a>
+  This function is to return the Balance  of owner against the address that user provided
+
+Following is the table of parameters.
+
+| Parameter Name   | Type |
+| ---------------- | ---- |
+| owner            | Key  |
+
+This method **returns** U256.
+
+- #### fund_contract <a id="Scspr-fund-contract"></a>
+  Allows to deposit fund to contract.
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
+| purse          | URef |
+| amount         | U512 |
 
-This method **returns** bool.
+This method **returns** nothing.
 
-- #### get_trading_fee_amount <a id="SyntheticToken-get-trading-fee-amount"></a>
-  Gives the wcspr hash
+- #### wcspr <a id="Scspr-wcspr"></a>
+  Gives address of stored wcspr
+
+Following is the table of parameters.
+
+| Parameter Name      | Type |
+| ------------------- | ---- |
+
+This method **returns** Key.
+
+- #### uniswap_router <a id="Scspr-uniswap-router"></a>
+  Gives address of stored uniswap router
+
+Following is the table of parameters.
+
+| Parameter Name      | Type |
+| ------------------- | ---- |
+
+This method **returns** Key.
+
+- #### uniswap_router <a id="Scspr-uniswap-pair"></a>
+  Gives address of stored uniswap pair
+
+Following is the table of parameters.
+
+| Parameter Name      | Type |
+| ------------------- | ---- |
+
+This method **returns** Key.
+
+- #### get_trading_fee_amount <a id="Scspr-get-trading-fee-amount"></a>
+  Provides current calculated trading fee amount
 
 Following is the table of parameters.
 
@@ -547,7 +574,7 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### get_amount_payout <a id="SyntheticToken-get-amount-payout"></a>
+- #### get_amount_payout <a id="Scspr-get-amount-payout"></a>
   Gives the payout amount
 
 Following is the table of parameters.
@@ -558,17 +585,7 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### get_wrapped_balance <a id="SyntheticToken-get-wrapped-balance"></a>
-  Gives the wrapped balance
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** U256.
-
-- #### get_synthetic_balance <a id="SyntheticToken-get-synthetic-balance"></a>
+- #### get_synthetic_balance <a id="Scspr-get-synthetic-balance"></a>
   Gives the synthetic balance
 
 Following is the table of parameters.
@@ -578,8 +595,8 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### get_evaluation <a id="SyntheticToken-get-evaluation"></a>
-  Gives the amount of evaluation
+- #### get_wrapped_balance <a id="Scspr-get-wrapped-balance"></a>
+  Gives the wrapped balance
 
 Following is the table of parameters.
 
@@ -588,7 +605,17 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### get_pair_balances <a id="SyntheticToken-get-pair-balances"></a>
+- #### get_evaluation <a id="Scspr-get-evaluation"></a>
+  Gives the amount of evaluation after calculation
+
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+
+This method **returns** U256.
+
+- #### get_pair_balances <a id="Scspr-get-pair-balances"></a>
   Gives the pair balances
 
 Following is the table of parameters.
@@ -598,7 +625,7 @@ Following is the table of parameters.
 
 This method **returns** Tuple2(U256, U256).
 
-- #### get_lp_token_balance <a id="SyntheticToken-get-lp-token-balance"></a>
+- #### get_lp_token_balance <a id="Scspr-get-lp-token-balance"></a>
   Gives the lp token balance
 
 Following is the table of parameters.
@@ -608,7 +635,7 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### get_liquidity_percent <a id="SyntheticToken-get-liquidity-percent"></a>
+- #### get_liquidity_percent <a id="Scspr-get-liquidity-percent"></a>
   Gives the percentage of the liquidity
 
 Following is the table of parameters.
@@ -618,174 +645,72 @@ Following is the table of parameters.
 
 This method **returns** U256.
 
-- #### fees_decision <a id="SyntheticToken-fees-decision"></a>
-  Used for the decision of fees
+- #### master_address <a id="Scspr-master-address"></a>
+  Gives the master address
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
 
-This method **returns** nothing.
+This method **returns** Key.
 
-- #### extract_and_send_fees <a id="SyntheticToken-extract-and-send-fees"></a>
-  Used for the decision of fees
-
-Following is the table of parameters.
-
-| Parameter Name      | Type |
-| ------------------- | ---- |
-| previous_evaluation | U256 |
-| current_evaluation  | U256 |
-
-This method **returns** nothing.
-
-- #### swap_exact_tokens_for_tokens <a id="SyntheticToken-swap-exact-tokens-for-tokens"></a>
-  Performs swapping of exact tokens for tokens
-
-Following is the table of parameters.
-
-| Parameter Name     | Type |
-| ------------------ | ---- |
-| amount             | U256 |
-| amount_out_min     | U256 |
-| from_token_address | Key  |
-| to_token_address   | Key  |
-
-This method **returns** nothing.
-
-- #### add_liquidity <a id="SyntheticToken-add-liquidity"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| \_amount_wcspr | U256 |
-| \_amount_scspr | U256 |
-
-This method **returns** Tuple2(U256, U256).
-
-- #### remove_liquidity <a id="SyntheticToken-remove-liquidity"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| amount         | U256 |
-
-This method **returns** Tuple2(U256, U256).
-
-- #### profit_arbitrage_remove <a id="SyntheticToken-profit-arbitrage-remove"></a>
+- #### current_evaluation <a id="Scspr-current-evaluation"></a>
+  Gives the current evaluation
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
 
-This method **returns** U256.
+This method **returns** Key.
 
-- #### to_remove_cspr <a id="SyntheticToken-to-remove-cspr"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** U256.
-
-- #### swap_amount_arbitrage_scspr <a id="SyntheticToken-swap-amount-arbitrage-scspr"></a>
+- #### transfer_helper <a id="Scspr-transfer-helper"></a>
+  Gives the transfer helper
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
 
-This method **returns** U256.
+This method **returns** Key.
 
-- #### self_burn <a id="SyntheticToken-self-burn"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** nothing.
-
-- #### clean_up <a id="SyntheticToken-clean-up"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| deposit_amount | U256 |
-
-This method **returns** nothing.
-
-- #### unwrap <a id="SyntheticToken-unwrap"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| amount_wcspr   | U256 |
-
-This method **returns** nothing.
-
-- #### profit <a id="SyntheticToken-profit"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-| amount_wcspr   | U256 |
-
-This method **returns** nothing.
-
-- #### update_evaluation <a id="SyntheticToken-update-evaluation"></a>
+- #### token_defined <a id="Scspr-token-defined"></a>
+  Gives the defined token status
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
 
-This method **returns** nothing.
+This method **returns** bool.
 
-- #### skim_pair <a id="SyntheticToken-skim-pair"></a>
-
-Following is the table of parameters.
-
-| Parameter Name | Type |
-| -------------- | ---- |
-
-This method **returns** nothing.
-
-- #### arbitrage_decision <a id="SyntheticToken-arbitrage-decision"></a>
+- #### allow_deposit <a id="Scspr-allow-deposit"></a>
+  Gives the deposit allow status
 
 Following is the table of parameters.
 
 | Parameter Name | Type |
 | -------------- | ---- |
 
-This method **returns** nothing.
+This method **returns** bool.
 
-- #### arbitrage_scspr <a id="SyntheticToken-arbitrage-scspr"></a>
-
-Following is the table of parameters.
-
-| Parameter Name    | Type |
-| ----------------- | ---- |
-| wrapped_balance   | U256 |
-| synthetic_balance | U256 |
-
-This method **returns** nothing.
-
-- #### arbitrage_cspr <a id="SyntheticToken-arbitrage-cspr"></a>
+- #### helper_defined <a id="Scspr-helper-defined "></a>
+  Gives the helper defined status
 
 Following is the table of parameters.
 
-| Parameter Name    | Type |
-| ----------------- | ---- |
-| wrapped_balance   | U256 |
-| synthetic_balance | U256 |
+| Parameter Name | Type |
+| -------------- | ---- |
 
-This method **returns** nothing.
+This method **returns** bool.
+
+- #### bypass_enabled <a id="Scspr-bypass-enabled"></a>
+  Gives the bypass enables status
+
+Following is the table of parameters.
+
+| Parameter Name | Type |
+| -------------- | ---- |
+
+This method **returns** bool.

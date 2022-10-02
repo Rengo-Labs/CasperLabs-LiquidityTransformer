@@ -551,7 +551,7 @@ fn forward_liquidity(
     );
     // Using session code as caller of purse is required for reserving wise
     session_code_call(
-        &env,
+        env,
         owner,
         runtime_args! {
             "package_hash" => Key::Hash(lt.package_hash()),
