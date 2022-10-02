@@ -14,6 +14,8 @@ use casper_types::{
 };
 use num_traits::AsPrimitive;
 
+const RESULT: &str = "result";
+
 const RESERVE_WISE: &str = "reserve_wise";
 const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const DEPOSIT: &str = "deposit";
@@ -22,6 +24,8 @@ const WITHDRAW: &str = "withdraw";
 const TRANSFER: &str = "transfer";
 const BALANCE_OF: &str = "balance_of";
 const ADD_LP_TOKENS: &str = "add_lp_tokens";
+const GET_WRAPPED_BALANCE: &str = "get_wrapped_balance";
+const GET_SYNTHETIC_BALANCE: &str = "get_synthetic_balance";
 
 // Key is the same a destination
 fn store<T: CLTyped + ToBytes>(key: &str, value: T) {
@@ -149,7 +153,7 @@ pub extern "C" fn call() {
                     "owner" => owner
                 },
             );
-            store("balance", ret);
+            store(RESULT, ret);
         }
         ADD_LP_TOKENS => {
             let amount: U512 = runtime::get_named_arg("amount");
@@ -168,6 +172,24 @@ pub extern "C" fn call() {
                     "token_amount" => token_amount,
                 },
             );
+        }
+        GET_SYNTHETIC_BALANCE => {
+            let ret: U256 = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                GET_SYNTHETIC_BALANCE,
+                runtime_args! {},
+            );
+            store(RESULT, ret);
+        }
+        GET_WRAPPED_BALANCE => {
+            let ret: U256 = runtime::call_versioned_contract(
+                package_hash.into_hash().unwrap_or_revert().into(),
+                None,
+                GET_WRAPPED_BALANCE,
+                runtime_args! {},
+            );
+            store(RESULT, ret);
         }
         _ => runtime::revert(ApiError::UnexpectedKeyVariant),
     };

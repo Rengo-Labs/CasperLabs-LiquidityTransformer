@@ -447,7 +447,6 @@ pub trait SYNTHETICTOKEN<Storage: ContractStorage>:
             Key::from(data::get_package_hash()),
             Key::from(data::get_package_hash()),
         );
-
         self.burn(Key::from(data::get_package_hash()), get_balance_of);
     }
 
