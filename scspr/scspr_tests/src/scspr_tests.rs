@@ -49,8 +49,12 @@ pub fn session_code_call(
     )
 }
 
-pub fn session_code_result<T: CLTyped + FromBytes>(env: &TestEnv, sender: AccountHash) -> T {
-    env.query_account_named_key(sender, &["result".into()])
+pub fn session_code_result<T: CLTyped + FromBytes>(
+    env: &TestEnv,
+    sender: AccountHash,
+    key: &str,
+) -> T {
+    env.query_account_named_key(sender, &[key.into()])
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -445,7 +449,7 @@ pub fn balance_of(env: &TestEnv, sender: AccountHash, package: Key, owner: Key, 
         },
         time,
     );
-    session_code_result(env, sender)
+    session_code_result(env, sender, "balance_of")
 }
 
 pub fn initialize_system(
@@ -595,7 +599,7 @@ pub fn initialize_system(
         },
         now,
     );
-    let wrapped_balance_after: U256 = session_code_result(env, owner);
+    let wrapped_balance_after: U256 = session_code_result(env, owner, "get_wrapped_balance");
     session_code_call(
         env,
         owner,
@@ -605,7 +609,7 @@ pub fn initialize_system(
         },
         now,
     );
-    let synthetic_balance_after: U256 = session_code_result(env, owner);
+    let synthetic_balance_after: U256 = session_code_result(env, owner, "get_synthetic_balance");
     lt.call_contract(person, "get_my_tokens", runtime_args! {}, now);
     let wrapped: Key = scspr.query_named_key("wcspr".into());
     session_code_call(
@@ -618,7 +622,7 @@ pub fn initialize_system(
         },
         now,
     );
-    let balance_of_wcspr: U256 = session_code_result(env, owner);
+    let balance_of_wcspr: U256 = session_code_result(env, owner, "balance_of");
     assert_eq!(
         synthetic_balance_after, balance_of_wcspr,
         "synthetic_balance_after & balance_of_wcspr are not equal"

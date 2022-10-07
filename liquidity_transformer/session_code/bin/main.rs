@@ -185,7 +185,7 @@ pub extern "C" fn call() {
                     CALLER_PURSE_RUNTIME_ARG => account::get_main_purse()
                 },
             );
-            store("result", ret);
+            store(REQUEST_REFUND, ret);
         }
         CURRENT_STAKEABLE_DAY => {
             let ret: u64 = runtime::call_versioned_contract(
@@ -194,7 +194,7 @@ pub extern "C" fn call() {
                 CURRENT_STAKEABLE_DAY,
                 runtime_args! {},
             );
-            store("result", ret);
+            store(CURRENT_STAKEABLE_DAY, ret);
         }
         PAYOUT_INVESTOR_ADDRESS => {
             let investor_address: Key = runtime::get_named_arg(INVESTOR_ADDRESS_RUNTIME_ARG);
@@ -206,7 +206,7 @@ pub extern "C" fn call() {
                     INVESTOR_ADDRESS_RUNTIME_ARG => investor_address
                 },
             );
-            store("result", ret);
+            store(PAYOUT_INVESTOR_ADDRESS, ret);
         }
         PREPARE_PATH => {
             let token_address: Key = runtime::get_named_arg(TOKEN_ADDRESS_RUNTIME_ARG);
@@ -218,7 +218,7 @@ pub extern "C" fn call() {
                     TOKEN_ADDRESS_RUNTIME_ARG => token_address
                 },
             );
-            store("result", ret);
+            store(PREPARE_PATH, ret);
         }
         _ => runtime::revert(ApiError::MissingKey),
     };
