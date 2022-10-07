@@ -14,8 +14,6 @@ use casper_types::{
 };
 use num_traits::AsPrimitive;
 
-const RESULT: &str = "result";
-
 const RESERVE_WISE: &str = "reserve_wise";
 const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 const DEPOSIT: &str = "deposit";
@@ -153,7 +151,7 @@ pub extern "C" fn call() {
                     "owner" => owner
                 },
             );
-            store(RESULT, ret);
+            store(BALANCE_OF, ret);
         }
         ADD_LP_TOKENS => {
             let amount: U512 = runtime::get_named_arg("amount");
@@ -180,7 +178,7 @@ pub extern "C" fn call() {
                 GET_SYNTHETIC_BALANCE,
                 runtime_args! {},
             );
-            store(RESULT, ret);
+            store(GET_SYNTHETIC_BALANCE, ret);
         }
         GET_WRAPPED_BALANCE => {
             let ret: U256 = runtime::call_versioned_contract(
@@ -189,7 +187,7 @@ pub extern "C" fn call() {
                 GET_WRAPPED_BALANCE,
                 runtime_args! {},
             );
-            store(RESULT, ret);
+            store(GET_WRAPPED_BALANCE, ret);
         }
         _ => runtime::revert(ApiError::UnexpectedKeyVariant),
     };

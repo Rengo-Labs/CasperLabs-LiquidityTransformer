@@ -42,8 +42,12 @@ pub fn session_code_call(
     )
 }
 
-pub fn session_code_result<T: CLTyped + FromBytes>(env: &TestEnv, sender: AccountHash) -> T {
-    env.query_account_named_key(sender, &["result".into()])
+pub fn session_code_result<T: CLTyped + FromBytes>(
+    env: &TestEnv,
+    sender: AccountHash,
+    key: &str,
+) -> T {
+    env.query_account_named_key(sender, &[key.into()])
 }
 
 fn deploy_uniswap_router(
@@ -593,7 +597,7 @@ fn test_current_stakeable_day() {
         },
         now() + (DAYS * MILLI_SECONDS_IN_DAY),
     );
-    let ret: u64 = session_code_result(&env, owner);
+    let ret: u64 = session_code_result(&env, owner, "current_stakeable_day");
     assert_eq!(ret - 2, DAYS, "Invalid stakeable day"); // - 2 for past launch time balance
 }
 
@@ -832,7 +836,7 @@ fn test_payout_investor_address() {
         },
         time,
     );
-    let ret: U256 = session_code_result(&env, owner);
+    let ret: U256 = session_code_result(&env, owner, "payout_investor_address");
     assert_eq!(ret, 2640002000000000u64.into()); // calculated amount in contract
 }
 
@@ -893,7 +897,7 @@ fn test_prepare_path() {
         },
         now(),
     );
-    let ret: Vec<Key> = session_code_result(&env, owner);
+    let ret: Vec<Key> = session_code_result(&env, owner, "prepare_path");
     assert_eq!(ret[0], Key::Hash(erc20.package_hash()));
     assert_eq!(ret[1], Key::Hash(wcspr.package_hash()));
 }
@@ -925,7 +929,7 @@ fn test_request_refund() {
         },
         now() + TIME,
     );
-    let ret: (U256, U256) = session_code_result(&env, owner);
+    let ret: (U256, U256) = session_code_result(&env, owner, "request_refund");
     assert_eq!(
         ret,
         (
