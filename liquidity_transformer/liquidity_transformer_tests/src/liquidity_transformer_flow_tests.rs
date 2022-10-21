@@ -3,10 +3,8 @@ use casper_types::{
     account::AccountHash, bytesrepr::FromBytes, runtime_args, CLTyped, Key, RuntimeArgs, U256, U512,
 };
 use casperlabs_test_env::{TestContract, TestEnv};
-use num_traits::cast::AsPrimitive;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
-const MILLI_SECONDS_IN_DAY: u64 = 86_400_000;
 const SCSPR_AMOUNT: U512 = U512([50_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
 const TRANSFORMER_AMOUNT: U512 = U512([50_000_000, 0, 0, 0, 0, 0, 0, 0]);
 const TWOTHOUSEND_CSPR: U512 = U512([2_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
@@ -262,9 +260,6 @@ fn deploy() -> (
     TestContract,
     TestContract,
     TestContract,
-    TestContract,
-    TestContract,
-    TestContract,
 ) {
     let env = TestEnv::new();
     let owner = env.next_user();
@@ -344,102 +339,12 @@ fn deploy() -> (
         env,
         liquidity_transformer,
         owner,
-        erc20,
-        wcspr,
-        uniswap_router,
         uniswap_pair,
         wise_token,
         scspr,
         uniswap_factory,
         uniswap_pair_wise,
     )
-}
-
-fn add_liquidity(
-    env: &TestEnv,
-    owner: AccountHash,
-    erc20: &TestContract,
-    uniswap_router: TestContract,
-    uniswap_pair: TestContract,
-    wcspr: TestContract,
-    uniswap_factory: TestContract,
-) {
-    const AMOUNT: u128 = 100_000_000_000_000_000;
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Account(owner)
-        },
-        now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "create_pair",
-        runtime_args! {
-            "token_a" => Key::Hash(erc20.package_hash()),
-            "token_b" => Key::Hash(wcspr.package_hash()),
-            "pair_hash" => Key::Hash(uniswap_pair.package_hash())
-        },
-        now(),
-    );
-    erc20.call_contract(
-        owner,
-        "mint",
-        runtime_args! {
-            "to" => Key::Account(owner),
-            "amount" => U256::from(AMOUNT)
-        },
-        now(),
-    );
-    session_code_call(
-        env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(wcspr.package_hash()),
-            "entrypoint" => "deposit_no_return",
-            "amount" => U512::from(100_000_000_000_000_u128),
-        },
-        now(),
-    );
-    erc20.call_contract(
-        owner,
-        "approve",
-        runtime_args! {
-            "spender" => Key::Hash(uniswap_router.package_hash()),
-            "amount" => U256::from(AMOUNT)
-        },
-        now(),
-    );
-    wcspr.call_contract(
-        owner,
-        "approve",
-        runtime_args! {
-            "spender" => Key::Hash(uniswap_router.package_hash()),
-            "amount" => U512::from(100_000_000_000_000_u128)
-        },
-        now(),
-    );
-    let deadline: u128 = match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(n) => n.as_millis() + (1000 * (30 * 60)), // current epoch time in milisecond + 30 minutes
-        Err(_) => 0,
-    };
-    uniswap_router.call_contract(
-        owner,
-        "add_liquidity_js_client",
-        runtime_args! {
-            "deadline" => U256::from(deadline),
-            "token_a" => Key::Hash(erc20.package_hash()),
-            "token_b" => Key::Hash(wcspr.package_hash()),
-            "amount_a_desired" => U256::from(1_000_000_000_000_u128),
-            "amount_b_desired" => U256::from(1_000_000_000_000_u128),
-            "amount_a_min" => U256::from(100_000_000_000_u128),
-            "amount_b_min" => U256::from(100_000_000_000_u128),
-            "to" => Key::Hash(uniswap_pair.package_hash()),
-            "pair" => Some(Key::Hash(uniswap_pair.package_hash())),
-        },
-        now(),
-    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -512,201 +417,20 @@ fn forward_liquidity(
 }
 
 #[test]
-fn test_deploy() {
-    let (_, _, _, _, _, _, _, _, _, _, _) = deploy();
-}
-
-#[test]
-fn test_current_stakeable_day() {
-    let (env, lt, owner, _, _, _, _, _, _, _, _) = deploy();
-    const DAYS: u64 = 10;
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(lt.package_hash()),
-            "entrypoint" => "current_stakeable_day"
-        },
-        now() + (DAYS * MILLI_SECONDS_IN_DAY),
-    );
-    let ret: u64 = session_code_result(&env, owner, "current_stakeable_day");
-    assert_eq!(ret - 2, DAYS, "Invalid stakeable day"); // - 2 for past launch time balance
-}
-
-#[test]
-fn test_set_settings() {
-    let (_, liquidity_transformer, owner, _, _, _, pair, wise, scspr, _, _) = deploy();
-    liquidity_transformer.call_contract(
-        owner,
-        "set_settings",
-        runtime_args! {
-            "wise_token" =>  Key::Hash(wise.package_hash()),
-            "uniswap_pair" => Key::Hash(pair.package_hash()),
-            "synthetic_cspr" => Key::Hash(scspr.package_hash())
-        },
-        now(),
-    );
-    let setted_wise_contract: Key =
-        liquidity_transformer.query_named_key("wise_contract".to_string());
-    let setted_uniswap_pair: Key =
-        liquidity_transformer.query_named_key("uniswap_pair".to_string());
-    let setted_scspr: Key = liquidity_transformer.query_named_key("scspr".to_string());
-    assert_eq!(
-        setted_wise_contract,
-        Key::Hash(wise.package_hash()),
-        "wise address not set"
-    );
-    assert_eq!(
-        setted_uniswap_pair,
-        Key::Hash(pair.package_hash()),
-        "uniswap pair address not set"
-    );
-    assert_eq!(
-        setted_scspr,
-        Key::Hash(scspr.package_hash()),
-        "scspr address not set"
-    );
-}
-
-#[test]
-fn test_renounce_keeper() {
-    let (_, liquidity_transformer, owner, _, _, _, _, _, _, _, _) = deploy();
-    let res: Key = liquidity_transformer.query_named_key("settings_keeper".to_string());
-    let zero: Key = Key::from_formatted_str(
-        "hash-0000000000000000000000000000000000000000000000000000000000000000",
-    )
-    .unwrap();
-    assert_ne!(res, zero, "Keeper already zero address");
-    liquidity_transformer.call_contract(owner, "renounce_keeper", runtime_args! {}, 0);
-    let res: Key = liquidity_transformer.query_named_key("settings_keeper".to_string());
-    assert_eq!(res, zero, "Keeper not renounced");
-}
-
-#[test]
-fn test_reserve_wise() {
-    let (env, liquidity_transformer, owner, _, _, _, _, _, _, _, _) = deploy();
-    let investment_mode: u8 = 1;
-    let msg_value: U512 = 75757576.into(); // this value because min value constraint (MIN = 75757575)
-    let investor_balance: U256 = liquidity_transformer
-        .query_dictionary("investor_balance", key_to_str(&Key::Account(owner)))
-        .unwrap_or_default();
-    assert_eq!(
-        investor_balance,
-        0.into(),
-        "Investor has already some wise balance"
-    );
-    const DAYS: u64 = 12;
-    const TIME: u64 = DAYS * 86400 * 1000;
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => investment_mode,
-            "amount" => msg_value,
-        },
-        now() + TIME,
-    );
-    let investor_balance: U256 = liquidity_transformer
-        .query_dictionary("investor_balance", key_to_str(&Key::Account(owner)))
-        .unwrap_or_default();
-    assert_eq!(
-        investor_balance,
-        <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(msg_value),
-        "Investor wise balance not increased"
-    );
-}
-
-#[test]
-fn test_reserve_wise_with_token() {
+fn test_reserve_claim_flow() {
     let (
         env,
         liquidity_transformer,
         owner,
-        erc20,
-        wcspr,
-        uniswap_router,
-        uniswap_pair,
-        _,
-        _,
-        uniswap_factory,
-        _,
-    ) = deploy();
-    add_liquidity(
-        &env,
-        owner,
-        &erc20,
-        uniswap_router,
-        uniswap_pair,
-        wcspr,
-        uniswap_factory,
-    );
-    const AMOUNT: u128 = 100_000_000;
-    let investment_mode: u8 = 1;
-    erc20.call_contract(
-        owner,
-        "approve",
-        runtime_args! {
-            "spender" => Key::Hash(liquidity_transformer.package_hash()),
-            "amount" => U256::from(AMOUNT)
-        },
-        now(),
-    );
-    let investor_balance: U256 = liquidity_transformer
-        .query_dictionary("investor_balance", key_to_str(&Key::Account(owner)))
-        .unwrap_or_default();
-    assert_eq!(
-        investor_balance,
-        0.into(),
-        "Investor has already some wise balance"
-    );
-    const DAYS: u64 = 12;
-    const TIME: u64 = DAYS * 86400 * 1000;
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise_with_token",
-            "token_address" => Key::Hash(erc20.package_hash()),
-            "token_amount" => U256::from(AMOUNT),
-            "investment_mode" => investment_mode,
-        },
-        now() + TIME,
-    );
-    let investor_balance: U256 = liquidity_transformer
-        .query_dictionary("investor_balance", key_to_str(&Key::Account(owner)))
-        .unwrap_or_default();
-    assert_eq!(
-        investor_balance,
-        99690060.into(), // Not exactly equal to AMOUNT due to fee cutting during 'swap_exact_tokens_for_cspr'
-        "Investor wise balance not increased"
-    );
-}
-
-#[test]
-fn test_forward_liquidity() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
         uniswap_pair,
         wise,
         scspr,
         uniswap_factory,
         uniswap_pair_wise,
     ) = deploy();
-    let uniswap_swaped: bool = liquidity_transformer
-        .query_dictionary("globals", "uniswap_swaped".into())
-        .unwrap_or_default();
-    assert!(
-        !uniswap_swaped,
-        "Reserved tokens equivalent to CSPR contributed already forwarded"
-    );
+
+    let (user1, user2) = (env.next_user(), env.next_user());
+    // Using session code as caller of purse is required for reserving wise (multiple reservations)
     session_code_call(
         &env,
         owner,
@@ -718,51 +442,29 @@ fn test_forward_liquidity() {
         },
         now(),
     );
-    forward_liquidity(
-        &env,
-        &liquidity_transformer,
-        owner,
-        uniswap_pair,
-        &wise,
-        &scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    );
-    let uniswap_swaped: bool = liquidity_transformer
-        .query_dictionary("globals", "uniswap_swaped".into())
-        .unwrap_or_default();
-    assert!(
-        uniswap_swaped,
-        "Reserved tokens equivalent to CSPR contributed not forwarded"
-    );
-}
-
-#[test]
-fn test_payout_investor_address() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
-        uniswap_pair,
-        wise,
-        scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    ) = deploy();
     session_code_call(
         &env,
-        owner,
+        user1,
         runtime_args! {
             "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
             "entrypoint" => "reserve_wise",
             "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
+            "amount" => TWOTHOUSEND_CSPR + TWOTHOUSEND_CSPR
         },
         now(),
     );
+    session_code_call(
+        &env,
+        user2,
+        runtime_args! {
+            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
+            "entrypoint" => "reserve_wise",
+            "investment_mode" => 1_u8,
+            "amount" => TWOTHOUSEND_CSPR * 3
+        },
+        now(),
+    );
+
     let time = forward_liquidity(
         &env,
         &liquidity_transformer,
@@ -773,61 +475,27 @@ fn test_payout_investor_address() {
         uniswap_factory,
         uniswap_pair_wise,
     );
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "payout_investor_address",
-            "investor_address" => Key::Account(owner)
-        },
-        time,
-    );
-    let ret: U256 = session_code_result(&env, owner, "payout_investor_address");
-    assert_eq!(ret, 2640002000000000u64.into()); // calculated amount in contract
-}
 
-#[test]
-fn test_get_my_tokens() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
-        uniswap_pair,
-        wise,
-        scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    ) = deploy();
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
-        },
-        now(),
-    );
-    let time = forward_liquidity(
-        &env,
-        &liquidity_transformer,
-        owner,
-        uniswap_pair,
-        &wise,
-        &scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    );
+    // Balance check before
     let balance: U256 = wise
         .query_dictionary("balances", key_to_str(&Key::Account(owner)))
         .unwrap_or_default();
     assert_eq!(balance, 0.into(), "Already have some wise tokens");
+    let balance: U256 = wise
+        .query_dictionary("balances", key_to_str(&Key::Account(user1)))
+        .unwrap_or_default();
+    assert_eq!(balance, 0.into(), "Already have some wise tokens");
+    let balance: U256 = wise
+        .query_dictionary("balances", key_to_str(&Key::Account(user2)))
+        .unwrap_or_default();
+    assert_eq!(balance, 0.into(), "Already have some wise tokens");
+
+    // Claiming tokens
     liquidity_transformer.call_contract(owner, "get_my_tokens", runtime_args! {}, time);
+    liquidity_transformer.call_contract(user1, "get_my_tokens", runtime_args! {}, time);
+    liquidity_transformer.call_contract(user2, "get_my_tokens", runtime_args! {}, time);
+
+    // Balance check after
     let balance: U256 = wise
         .query_dictionary("balances", key_to_str(&Key::Account(owner)))
         .unwrap_or_default();
@@ -836,61 +504,20 @@ fn test_get_my_tokens() {
         2640002000000000u64.into(), // calculated amount in contract
         "Tokens not transfered to owner"
     );
-}
-
-#[test]
-fn test_prepare_path() {
-    let (env, liquidity_transformer, owner, erc20, wcspr, _, _, _, _, _, _) = deploy();
-    let token_address: Key = Key::Hash(erc20.package_hash());
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "prepare_path",
-            "token_address" => token_address,
-        },
-        now(),
-    );
-    let ret: Vec<Key> = session_code_result(&env, owner, "prepare_path");
-    assert_eq!(ret[0], Key::Hash(erc20.package_hash()));
-    assert_eq!(ret[1], Key::Hash(wcspr.package_hash()));
-}
-
-#[test]
-fn test_request_refund() {
-    let (env, liquidity_transformer, owner, _, _, _, _, _, _, _, _) = deploy();
-    // Using session code as caller of purse is required for reserving wise
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "reserve_wise",
-            "investment_mode" => 1_u8,
-            "amount" => TWOTHOUSEND_CSPR
-        },
-        now(),
-    );
-    // TIME PASSED, NOW CAN REFUND
-    const DAYS: u64 = 30;
-    const TIME: u64 = DAYS * 86400 * 1000;
-    session_code_call(
-        &env,
-        owner,
-        runtime_args! {
-            "package_hash" => Key::Hash(liquidity_transformer.package_hash()),
-            "entrypoint" => "request_refund"
-        },
-        now() + TIME,
-    );
-    let ret: (U256, U256) = session_code_result(&env, owner, "request_refund");
+    let balance: U256 = wise
+        .query_dictionary("balances", key_to_str(&Key::Account(user1)))
+        .unwrap_or_default();
     assert_eq!(
-        ret,
-        (
-            <casper_types::U512 as AsPrimitive<casper_types::U256>>::as_(TWOTHOUSEND_CSPR),
-            2640002000000000u64.into() // calculated amount in contract
-        ),
-        "Invalid refund"
+        balance,
+        5280005000000000u64.into(), // calculated amount in contract
+        "Tokens not transfered to owner"
+    );
+    let balance: U256 = wise
+        .query_dictionary("balances", key_to_str(&Key::Account(user2)))
+        .unwrap_or_default();
+    assert_eq!(
+        balance,
+        7920007000000000u64.into(), // calculated amount in contract
+        "Tokens not transfered to owner"
     );
 }
