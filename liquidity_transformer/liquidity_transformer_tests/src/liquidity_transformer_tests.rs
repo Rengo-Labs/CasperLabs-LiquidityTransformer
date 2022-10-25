@@ -102,7 +102,7 @@ fn deploy_uniswap_pair(
         runtime_args! {
             "name" => "pair",
             "symbol" => "PAIR",
-            "decimals" => 18_u8,
+            "decimals" => 9_u8,
             "initial_supply" => U256::from(0),
             "callee_package_hash" => Key::Hash(flash_swapper_package_hash),
             "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
@@ -288,7 +288,7 @@ fn deploy() -> (
     );
     let erc20 = deploy_erc20(&env, owner, now());
     let flash_swapper = deploy_flash_swapper(&env, owner, &wcspr, &uniswap_factory, now());
-    let uniswap_pair: TestContract = deploy_uniswap_pair(
+    let pair_scspr: TestContract = deploy_uniswap_pair(
         &env,
         owner,
         "pair-1",
@@ -296,7 +296,7 @@ fn deploy() -> (
         &uniswap_factory,
         now(),
     );
-    let uniswap_pair_wise: TestContract = deploy_uniswap_pair(
+    let pair_wise: TestContract = deploy_uniswap_pair(
         &env,
         owner,
         "pair-2",
@@ -309,7 +309,7 @@ fn deploy() -> (
         &env,
         owner,
         &wcspr,
-        &uniswap_pair,
+        &pair_scspr,
         &uniswap_router,
         &uniswap_factory,
         SCSPR_AMOUNT,
@@ -321,7 +321,7 @@ fn deploy() -> (
         &scspr,
         &uniswap_router,
         &uniswap_factory,
-        &uniswap_pair_wise,
+        &pair_wise,
         &liquidity_guard,
         &wcspr,
         &erc20,
@@ -334,7 +334,8 @@ fn deploy() -> (
         owner,
         Key::Hash(wise_token.package_hash()),
         Key::Hash(scspr.package_hash()),
-        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(pair_wise.package_hash()),
+        Key::Hash(pair_scspr.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
         Key::Hash(wcspr.package_hash()),
         TRANSFORMER_AMOUNT,
@@ -347,11 +348,11 @@ fn deploy() -> (
         erc20,
         wcspr,
         uniswap_router,
-        uniswap_pair,
+        pair_scspr,
         wise_token,
         scspr,
         uniswap_factory,
-        uniswap_pair_wise,
+        pair_wise,
     )
 }
 
@@ -447,11 +448,9 @@ fn forward_liquidity(
     env: &TestEnv,
     lt: &TestContract,
     owner: AccountHash,
-    uniswap_pair: TestContract,
     token: &TestContract,
     scspr: &TestContract,
     uniswap_factory: TestContract,
-    uniswap_pair_wise: TestContract,
 ) -> u64 {
     scspr.call_contract(
         owner,
@@ -478,14 +477,7 @@ fn forward_liquidity(
         now(),
     );
     token.call_contract(owner, "create_pair", runtime_args! {}, now());
-    scspr.call_contract(
-        owner,
-        "create_pair",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair.package_hash()),
-        },
-        now(),
-    );
+    scspr.call_contract(owner, "create_pair", runtime_args! {}, now());
     // Using session code as transformer purse fetch with access is required
     session_code_call(
         env,
@@ -503,9 +495,7 @@ fn forward_liquidity(
     lt.call_contract(
         owner,
         "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
+        runtime_args! {},
         now() + INVESTMENT_DAY_TIME,
     );
     now() + INVESTMENT_DAY_TIME
@@ -535,21 +525,23 @@ fn test_current_stakeable_day() {
 
 #[test]
 fn test_set_settings() {
-    let (_, liquidity_transformer, owner, _, _, _, pair, wise, scspr, _, _) = deploy();
+    let (_, liquidity_transformer, owner, _, _, pair_scspr, _, wise, scspr, _, pair_wise) =
+        deploy();
     liquidity_transformer.call_contract(
         owner,
         "set_settings",
         runtime_args! {
             "wise_token" =>  Key::Hash(wise.package_hash()),
-            "uniswap_pair" => Key::Hash(pair.package_hash()),
+            "pair_wise" => Key::Hash(pair_wise.package_hash()),
+            "pair_scspr" => Key::Hash(pair_scspr.package_hash()),
             "synthetic_cspr" => Key::Hash(scspr.package_hash())
         },
         now(),
     );
     let setted_wise_contract: Key =
         liquidity_transformer.query_named_key("wise_contract".to_string());
-    let setted_uniswap_pair: Key =
-        liquidity_transformer.query_named_key("uniswap_pair".to_string());
+    let setted_pair_wise: Key = liquidity_transformer.query_named_key("pair_wise".to_string());
+    let setted_pair_scspr: Key = liquidity_transformer.query_named_key("pair_scspr".to_string());
     let setted_scspr: Key = liquidity_transformer.query_named_key("scspr".to_string());
     assert_eq!(
         setted_wise_contract,
@@ -557,8 +549,13 @@ fn test_set_settings() {
         "wise address not set"
     );
     assert_eq!(
-        setted_uniswap_pair,
-        Key::Hash(pair.package_hash()),
+        setted_pair_wise,
+        Key::Hash(pair_wise.package_hash()),
+        "uniswap pair address not set"
+    );
+    assert_eq!(
+        setted_pair_scspr,
+        Key::Hash(pair_scspr.package_hash()),
         "uniswap pair address not set"
     );
     assert_eq!(
@@ -687,19 +684,7 @@ fn test_reserve_wise_with_token() {
 
 #[test]
 fn test_forward_liquidity() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
-        uniswap_pair,
-        wise,
-        scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, uniswap_factory, _) = deploy();
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
         .unwrap_or_default();
@@ -722,11 +707,9 @@ fn test_forward_liquidity() {
         &env,
         &liquidity_transformer,
         owner,
-        uniswap_pair,
         &wise,
         &scspr,
         uniswap_factory,
-        uniswap_pair_wise,
     );
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
@@ -739,19 +722,7 @@ fn test_forward_liquidity() {
 
 #[test]
 fn test_payout_investor_address() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
-        uniswap_pair,
-        wise,
-        scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, uniswap_factory, _) = deploy();
     session_code_call(
         &env,
         owner,
@@ -767,11 +738,9 @@ fn test_payout_investor_address() {
         &env,
         &liquidity_transformer,
         owner,
-        uniswap_pair,
         &wise,
         &scspr,
         uniswap_factory,
-        uniswap_pair_wise,
     );
     session_code_call(
         &env,
@@ -789,19 +758,7 @@ fn test_payout_investor_address() {
 
 #[test]
 fn test_get_my_tokens() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        _,
-        uniswap_pair,
-        wise,
-        scspr,
-        uniswap_factory,
-        uniswap_pair_wise,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, uniswap_factory, _) = deploy();
     session_code_call(
         &env,
         owner,
@@ -817,11 +774,9 @@ fn test_get_my_tokens() {
         &env,
         &liquidity_transformer,
         owner,
-        uniswap_pair,
         &wise,
         &scspr,
         uniswap_factory,
-        uniswap_pair_wise,
     );
     let balance: U256 = wise
         .query_dictionary("balances", key_to_str(&Key::Account(owner)))

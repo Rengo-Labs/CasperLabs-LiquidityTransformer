@@ -176,7 +176,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         });
     }
 
-    fn form_liquidity(&mut self, _pair: Option<Key>) -> U256 {
+    fn form_liquidity(&mut self) -> U256 {
         self.only_transformer();
         let is_allow_deposit: bool = synthetic_token_data::get_allow_deposit();
         if is_allow_deposit {
@@ -230,7 +230,7 @@ pub trait SCSPR<Storage: ContractStorage>:
                     "amount_b_min" => zero,
                     "to" => Key::from(data::get_contract_package_hash()),
                     "deadline" => U256::from(time + 7200),
-                    "pair" => _pair,
+                    "pair" => Some(get_uniswap_pair()),
                 },
             );
         self.scspr_emit(&SCSPREvent::FormedLiquidity {
@@ -252,13 +252,11 @@ pub trait SCSPR<Storage: ContractStorage>:
             "hash-0000000000000000000000000000000000000000000000000000000000000000",
         )
         .unwrap();
-
         synthetic_token_data::set_master_address(zero_addr);
     }
 
     fn forward_ownership(&mut self, new_master: Key) {
         self.only_master();
-
         synthetic_token_data::set_master_address(new_master);
     }
 
@@ -325,7 +323,7 @@ pub trait SCSPR<Storage: ContractStorage>:
         transfer_invoker
     }
 
-    fn create_pair(&mut self, pair: Key) {
+    fn create_pair(&mut self) {
         self.only_master();
         let () = runtime::call_versioned_contract(
             data::get_uniswap_factory()
@@ -337,10 +335,9 @@ pub trait SCSPR<Storage: ContractStorage>:
             runtime_args! {
                 "token_a" => get_wcspr(),
                 "token_b" => Key::from(data::get_contract_package_hash()),
-                "pair_hash" => pair
+                "pair_hash" => get_uniswap_pair()
             },
         );
-        synthetic_token_data::set_uniswap_pair(pair);
     }
 
     fn scspr_emit(&mut self, erc20_event: &SCSPREvent) {

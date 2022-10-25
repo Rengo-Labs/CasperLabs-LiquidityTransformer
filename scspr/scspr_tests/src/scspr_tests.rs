@@ -61,9 +61,10 @@ pub fn session_code_result<T: CLTyped + FromBytes>(
 pub fn deploy_liquidity_transformer(
     env: &TestEnv,
     owner: AccountHash,
-    wise_token: Key,
+    wise: Key,
     scspr: Key,
-    uniswap_pair: Key,
+    pair_wise: Key,
+    pair_scspr: Key,
     uniswap_router: Key,
     wcspr: Key,
     amount: U512,
@@ -75,9 +76,10 @@ pub fn deploy_liquidity_transformer(
         "liquidity_transformer",
         owner,
         runtime_args! {
-            "wise_token" => wise_token,
+            "wise" => wise,
             "scspr" => scspr,
-            "uniswap_pair" => uniswap_pair,
+            "pair_wise" => pair_wise,
+            "pair_scspr" => pair_scspr,
             "uniswap_router" => uniswap_router,
             "wcspr" => wcspr,
             "amount" => amount
@@ -183,7 +185,7 @@ pub fn deploy_uniswap_pair(
         runtime_args! {
             "name" => "pair",
             "symbol" => "PAIR",
-            "decimals" => 18_u8,
+            "decimals" => 9_u8,
             "initial_supply" => U256::from(0),
             "callee_package_hash" => flash_swapper_package_hash,
             "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
@@ -458,10 +460,10 @@ pub fn initialize_system(
     amount: U256,
     person: AccountHash,
 ) -> (TestContract, TestContract, TestContract, TestContract, u64) {
-    let (scspr, uniswap_router, uniswap_factory, uniswap_pair, wcspr, _, helper, flash_swapper) =
+    let (scspr, uniswap_router, uniswap_factory, pair_scspr, wcspr, _, _, flash_swapper) =
         deploy_scspr(env, owner);
     let liquidity_guard = deploy_liquidity_guard(env, owner, now());
-    let uniswap_pair_wise: TestContract = deploy_uniswap_pair(
+    let pair_wise: TestContract = deploy_uniswap_pair(
         env,
         owner,
         "pair-2",
@@ -475,7 +477,7 @@ pub fn initialize_system(
         &scspr,
         &uniswap_router,
         &uniswap_factory,
-        &uniswap_pair_wise,
+        &pair_wise,
         &liquidity_guard,
         &wcspr,
         now().into(),
@@ -501,57 +503,19 @@ pub fn initialize_system(
         owner,
         "set_white_list",
         runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
             "white_list" => Key::Hash(token.package_hash())
         },
         now(),
     );
-    scspr.call_contract(
-        owner,
-        "define_token",
-        runtime_args! {
-            "wise_token" => Key::Hash(token.package_hash()),
-        },
-        now(),
-    );
-    assert!(
-        scspr.query_named_key::<bool>("token_defined".into()),
-        "Token not defined"
-    );
-    scspr.call_contract(
-        owner,
-        "define_helper",
-        runtime_args! {
-            "transfer_helper" => Key::Hash(helper.package_hash()),
-        },
-        now(),
-    );
-    assert!(
-        scspr.query_named_key::<bool>("helper_defined".into()),
-        "Helper not defined"
-    );
     token.call_contract(owner, "create_pair", runtime_args! {}, now());
-    scspr.call_contract(
-        owner,
-        "create_pair",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair.package_hash()),
-        },
-        now(),
-    );
+    scspr.call_contract(owner, "create_pair", runtime_args! {}, now());
     let lt = deploy_liquidity_transformer(
         env,
         owner,
         Key::Hash(token.package_hash()),
         Key::Hash(scspr.package_hash()),
-        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(pair_wise.package_hash()),
+        Key::Hash(pair_scspr.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
         Key::Hash(wcspr.package_hash()),
         TRANSFORMER_AMOUNT,
@@ -582,14 +546,7 @@ pub fn initialize_system(
         now() + TIME,
     );
     let now = now() + (TIME * 150_000);
-    lt.call_contract(
-        person,
-        "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
-        now,
-    );
+    lt.call_contract(person, "forward_liquidity", runtime_args! {}, now);
     session_code_call(
         env,
         owner,
@@ -618,7 +575,7 @@ pub fn initialize_system(
         runtime_args! {
             "entrypoint" => "balance_of",
             "package_hash" => wrapped,
-            "owner" => Key::Hash(uniswap_pair.package_hash())
+            "owner" => Key::Hash(pair_scspr.package_hash())
         },
         now,
     );
@@ -631,7 +588,7 @@ pub fn initialize_system(
         wrapped_balance_after, balance_of_wcspr,
         "wrapped_balance_after & balance_of_wcspr are not equal"
     );
-    (scspr, wcspr, uniswap_router, uniswap_pair, now)
+    (scspr, wcspr, uniswap_router, pair_scspr, now)
 }
 
 #[test]
