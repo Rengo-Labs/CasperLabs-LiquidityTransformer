@@ -138,9 +138,7 @@ fn liquidity_deposit() {
 /// @dev check add_liquidity documentation
 #[no_mangle]
 fn form_liquidity() {
-    let pair: Key = runtime::get_named_arg("pair");
-
-    let ret: U256 = Scspr::default().form_liquidity(Some(pair));
+    let ret: U256 = Scspr::default().form_liquidity();
     runtime::ret(CLValue::from_t(ret).unwrap_or_revert());
 }
 
@@ -196,8 +194,7 @@ fn define_helper() {
 /// @param 'pair' address to make pair on
 #[no_mangle]
 fn create_pair() {
-    let pair: Key = runtime::get_named_arg("pair");
-    Scspr::default().create_pair(pair);
+    Scspr::default().create_pair();
 }
 
 /// @dev This function is to mint token against the address that user provided
@@ -434,7 +431,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "form_liquidity",
-        vec![Parameter::new("pair", Key::cl_type())],
+        vec![],
         U256::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -480,7 +477,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "create_pair",
-        vec![Parameter::new("pair", Key::cl_type())],
+        vec![],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,

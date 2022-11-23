@@ -11,12 +11,14 @@ use crate::scspr_instance::SCSPRInstance;
 // TOTAL MOTES AVAILABLE 99_999_999_000_000_00
 
 const TIME: u64 = 300_000_000;
+pub const MILLI_SECONDS_IN_DAY: u64 = 86_400_000;
 const SCSPR_AMOUNT: U512 = U512([50_000_000_000_000, 0, 0, 0, 0, 0, 0, 0]);
 const TRANSFORMER_AMOUNT: U512 = U512([50_000_000, 0, 0, 0, 0, 0, 0, 0]);
 const ONE_CSPR: U256 = U256([1_000_000_000, 0, 0, 0]);
 const TWOTHOUSEND_CSPR: U256 = U256([2_000_000_000_000, 0, 0, 0]);
 const FIFTY_CSPR: U256 = U256([50_000_000_000, 0, 0, 0]);
 const TWOHUNDRET_CSPR: U256 = U256([200_000_000_000, 0, 0, 0]);
+pub const STAKEABLE_AMOUNT: U512 = U512([0, 0, 0, 0, 0, 0, 0, 0]);
 
 pub fn now() -> u64 {
     SystemTime::now()
@@ -57,48 +59,23 @@ pub fn session_code_result<T: CLTyped + FromBytes>(
     env.query_account_named_key(sender, &[key.into()])
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn deploy_liquidity_transformer(
+pub fn deploy_uniswap_router(
     env: &TestEnv,
     owner: AccountHash,
-    wise_token: Key,
-    scspr: Key,
-    uniswap_pair: Key,
-    uniswap_router: Key,
-    wcspr: Key,
-    amount: U512,
+    uniswap_factory: &TestContract,
+    wcspr: &TestContract,
+    uniswap_library: &TestContract,
     time: u64,
 ) -> TestContract {
     TestContract::new(
         env,
-        "liquidity_transformer.wasm",
-        "liquidity_transformer",
+        "uniswap-v2-router.wasm",
+        "uniswap-v2-router",
         owner,
         runtime_args! {
-            "wise_token" => wise_token,
-            "scspr" => scspr,
-            "uniswap_pair" => uniswap_pair,
-            "uniswap_router" => uniswap_router,
-            "wcspr" => wcspr,
-            "amount" => amount
-        },
-        time,
-    )
-}
-
-pub fn deploy_erc20(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
-    let decimals: u8 = 18;
-    let initial_supply: U256 = 0.into();
-    TestContract::new(
-        env,
-        "erc20-token.wasm",
-        "erc20",
-        owner,
-        runtime_args! {
-            "initial_supply" => initial_supply,
-            "name" => "ERC-20",
-            "symbol" => "ERC",
-            "decimals" => decimals
+            "factory" => Key::Hash(uniswap_factory.package_hash()),
+            "wcspr" => Key::Hash(wcspr.package_hash()),
+            "library" => Key::Hash(uniswap_library.package_hash())
         },
         time,
     )
@@ -118,6 +95,71 @@ pub fn deploy_uniswap_factory(
         runtime_args! {
             "fee_to_setter" => fee_to_setter
         },
+        time,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn deploy_uniswap_pair(
+    env: &TestEnv,
+    owner: AccountHash,
+    contract_name: &str,
+    name: String,
+    symbol: String,
+    decimals: u8,
+    initial_supply: U256,
+    flash_swapper: &TestContract,
+    uniswap_factory: &TestContract,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "pair-token.wasm",
+        contract_name,
+        owner,
+        runtime_args! {
+            "name" => name,
+            "symbol" => symbol,
+            "decimals" => decimals,
+            "initial_supply" => initial_supply,
+            "callee_package_hash" => Key::Hash(flash_swapper.package_hash()),
+            "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
+        },
+        time,
+    )
+}
+
+pub fn deploy_erc20(
+    env: &TestEnv,
+    owner: AccountHash,
+    name: String,
+    symbol: String,
+    decimals: u8,
+    initial_supply: U256,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "erc20-token.wasm",
+        "erc20",
+        owner,
+        runtime_args! {
+            "name" => name,
+            "symbol" => symbol,
+            "decimals" => decimals,
+            "initial_supply" => initial_supply
+        },
+        time,
+    )
+}
+
+pub fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
+    TestContract::new(
+        env,
+        "uniswap-v2-library.wasm",
+        "library",
+        owner,
+        runtime_args! {},
         time,
     )
 }
@@ -148,6 +190,7 @@ pub fn deploy_flash_swapper(
     env: &TestEnv,
     owner: AccountHash,
     wcspr: &TestContract,
+    erc20: &TestContract,
     uniswap_factory: &TestContract,
     time: u64,
 ) -> TestContract {
@@ -158,86 +201,8 @@ pub fn deploy_flash_swapper(
         owner,
         runtime_args! {
             "wcspr" => Key::Hash(wcspr.package_hash()),
-            "dai" => Key::Hash(wcspr.package_hash()),
+            "dai" => Key::Hash(erc20.package_hash()),
             "uniswap_v2_factory" => Key::Hash(uniswap_factory.package_hash())
-        },
-        time,
-    )
-}
-
-pub fn deploy_uniswap_pair(
-    env: &TestEnv,
-    owner: AccountHash,
-    contract_name: &str,
-    flash_swapper: &TestContract,
-    uniswap_factory: &TestContract,
-    time: u64,
-) -> TestContract {
-    let flash_swapper_package_hash: Key =
-        flash_swapper.query_named_key("contract_package_hash".to_string());
-    TestContract::new(
-        env,
-        "pair-token.wasm",
-        contract_name,
-        owner,
-        runtime_args! {
-            "name" => "pair",
-            "symbol" => "PAIR",
-            "decimals" => 18_u8,
-            "initial_supply" => U256::from(0),
-            "callee_package_hash" => flash_swapper_package_hash,
-            "factory_hash" => Key::Hash(uniswap_factory.package_hash()),
-        },
-        time,
-    )
-}
-
-pub fn deploy_uniswap_library(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
-    TestContract::new(
-        env,
-        "uniswap-v2-library.wasm",
-        "library",
-        owner,
-        runtime_args! {},
-        time,
-    )
-}
-
-pub fn deploy_uniswap_router(
-    env: &TestEnv,
-    owner: AccountHash,
-    uniswap_factory: &TestContract,
-    wcspr: &TestContract,
-    uniswap_library: &TestContract,
-    time: u64,
-) -> TestContract {
-    TestContract::new(
-        env,
-        "uniswap-v2-router.wasm",
-        "uniswap-v2-router",
-        owner,
-        runtime_args! {
-            "factory" => Key::Hash(uniswap_factory.package_hash()),
-            "wcspr" => Key::Hash(wcspr.package_hash()),
-            "library" => Key::Hash(uniswap_library.package_hash())
-        },
-        time,
-    )
-}
-
-pub fn deploy_transfer_helper(
-    env: &TestEnv,
-    owner: AccountHash,
-    transfer_invoker: Key,
-    time: u64,
-) -> TestContract {
-    TestContract::new(
-        env,
-        "transfer_helper.wasm",
-        "transfer_helper",
-        owner,
-        runtime_args! {
-            "transfer_invoker" => transfer_invoker,
         },
         time,
     )
@@ -246,40 +211,74 @@ pub fn deploy_transfer_helper(
 pub fn deploy_liquidity_guard(env: &TestEnv, owner: AccountHash, time: u64) -> TestContract {
     TestContract::new(
         env,
-        "liquidity_guard.wasm",
-        "liquidity_guard",
+        "liquidity-guard.wasm",
+        "liquidity-guard",
         owner,
         runtime_args! {},
         time,
     )
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn deploy_wise_token(
+#[allow(clippy::new_ret_no_self, clippy::too_many_arguments)]
+pub fn deploy_liquidity_transformer(
     env: &TestEnv,
-    owner: AccountHash,
-    scspr: &TestContract,
-    router: &TestContract,
-    factory: &TestContract,
-    pair: &TestContract,
-    liquidity_guard: &TestContract,
-    wcspr: &TestContract,
-    launch_time: U256,
+    contract_name: &str,
+    sender: AccountHash,
+    stakeable: Key,
+    scspr: Key,
+    pair_stakeable: Key,
+    pair_scspr: Key,
+    uniswap_router: Key,
+    wcspr: Key,
+    amount: U512,
     time: u64,
 ) -> TestContract {
     TestContract::new(
         env,
-        "stakeabletoken.wasm",
-        "wisetoken",
+        "liquidity_transformer.wasm",
+        contract_name,
+        sender,
+        runtime_args! {
+            "wise" => stakeable,
+            "scspr" => scspr,
+            "pair_wise" => pair_stakeable,
+            "pair_scspr" => pair_scspr,
+            "uniswap_router" => uniswap_router,
+            "wcspr" => wcspr,
+            "amount" => amount
+        },
+        time,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn deploy_stakeable(
+    env: &TestEnv,
+    owner: AccountHash,
+    stable_usd: &TestContract,
+    scspr: &TestContract,
+    wcspr: &TestContract,
+    uniswap_router: &TestContract,
+    uniswap_factory: &TestContract,
+    uniswap_pair: &TestContract,
+    liquidity_guard: &TestContract,
+    amount: U512,
+    time: u64,
+) -> TestContract {
+    TestContract::new(
+        env,
+        "stakeable-token.wasm",
+        "stakeable-token",
         owner,
         runtime_args! {
+            "stable_usd" => Key::Hash(stable_usd.package_hash()),
             "scspr" => Key::Hash(scspr.package_hash()),
-            "router" => Key::Hash(router.package_hash()),
-            "factory" => Key::Hash(factory.package_hash()),
-            "pair" => Key::Hash(pair.package_hash()),
-            "liquidity_guard" => Key::Hash(liquidity_guard.package_hash()),
             "wcspr" => Key::Hash(wcspr.package_hash()),
-            "launch_time" => launch_time,
+            "uniswap_router" => Key::Hash(uniswap_router.package_hash()),
+            "uniswap_factory" => Key::Hash(uniswap_factory.package_hash()),
+            "uniswap_pair" => Key::Hash(uniswap_pair.package_hash()),
+            "liquidity_guard" => Key::Hash(liquidity_guard.package_hash()),
+            "amount" => amount
         },
         time,
     )
@@ -289,7 +288,6 @@ fn deploy_scspr(
     env: &TestEnv,
     owner: AccountHash,
 ) -> (
-    TestContract,
     TestContract,
     TestContract,
     TestContract,
@@ -309,12 +307,24 @@ fn deploy_scspr(
         &uniswap_library,
         now(),
     );
-    let erc20 = deploy_erc20(env, owner, now());
-    let flash_swapper = deploy_flash_swapper(env, owner, &wcspr, &uniswap_factory, now());
+    let erc20 = deploy_erc20(
+        env,
+        owner,
+        "erc20_token".into(),
+        "ERC20".into(),
+        9,
+        0.into(),
+        now(),
+    );
+    let flash_swapper = deploy_flash_swapper(env, owner, &wcspr, &erc20, &uniswap_factory, now());
     let uniswap_pair: TestContract = deploy_uniswap_pair(
         env,
         owner,
         "pair-1",
+        "uniswap_pair".into(),
+        "UNI".into(),
+        9,
+        0.into(),
         &flash_swapper,
         &uniswap_factory,
         now(),
@@ -330,7 +340,6 @@ fn deploy_scspr(
         SCSPR_AMOUNT,
         now(),
     );
-    let helper = deploy_transfer_helper(env, owner, Key::Hash(scspr.package_hash()), now());
     (
         scspr,
         uniswap_router,
@@ -338,7 +347,6 @@ fn deploy_scspr(
         uniswap_pair,
         wcspr,
         erc20,
-        helper,
         flash_swapper,
     )
 }
@@ -458,28 +466,33 @@ pub fn initialize_system(
     amount: U256,
     person: AccountHash,
 ) -> (TestContract, TestContract, TestContract, TestContract, u64) {
-    let (scspr, uniswap_router, uniswap_factory, uniswap_pair, wcspr, _, helper, flash_swapper) =
+    let (scspr, uniswap_router, uniswap_factory, pair_scspr, wcspr, erc20, flash_swapper) =
         deploy_scspr(env, owner);
     let liquidity_guard = deploy_liquidity_guard(env, owner, now());
-    let uniswap_pair_wise: TestContract = deploy_uniswap_pair(
+    let pair_stakeable: TestContract = deploy_uniswap_pair(
         env,
         owner,
         "pair-2",
+        "uniswap_pair_wise".into(),
+        "UNI_P_W".into(),
+        9,
+        0.into(),
         &flash_swapper,
         &uniswap_factory,
         now(),
     );
-    let token = deploy_wise_token(
+    let token = deploy_stakeable(
         env,
         owner,
+        &erc20,
         &scspr,
+        &wcspr,
         &uniswap_router,
         &uniswap_factory,
-        &uniswap_pair_wise,
+        &pair_stakeable,
         &liquidity_guard,
-        &wcspr,
-        now().into(),
-        now(),
+        STAKEABLE_AMOUNT,
+        now() - (2 * MILLI_SECONDS_IN_DAY), // 172800000 == 2 days in ms (launch time set in past for testing)
     );
     scspr.call_contract(
         owner,
@@ -493,65 +506,18 @@ pub fn initialize_system(
         owner,
         "set_white_list",
         runtime_args! {
-            "white_list" => Key::Hash(scspr.package_hash())
-        },
-        now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
             "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(token.package_hash())
-        },
-        now(),
-    );
-    scspr.call_contract(
-        owner,
-        "define_token",
-        runtime_args! {
-            "wise_token" => Key::Hash(token.package_hash()),
-        },
-        now(),
-    );
-    assert!(
-        scspr.query_named_key::<bool>("token_defined".into()),
-        "Token not defined"
-    );
-    scspr.call_contract(
-        owner,
-        "define_helper",
-        runtime_args! {
-            "transfer_helper" => Key::Hash(helper.package_hash()),
-        },
-        now(),
-    );
-    assert!(
-        scspr.query_named_key::<bool>("helper_defined".into()),
-        "Helper not defined"
-    );
-    token.call_contract(owner, "create_pair", runtime_args! {}, now());
-    scspr.call_contract(
-        owner,
-        "create_pair",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair.package_hash()),
         },
         now(),
     );
     let lt = deploy_liquidity_transformer(
         env,
+        "LIQUIDITY_TRANSFORMER",
         owner,
         Key::Hash(token.package_hash()),
         Key::Hash(scspr.package_hash()),
-        Key::Hash(uniswap_pair.package_hash()),
+        Key::Hash(pair_stakeable.package_hash()),
+        Key::Hash(pair_scspr.package_hash()),
         Key::Hash(uniswap_router.package_hash()),
         Key::Hash(wcspr.package_hash()),
         TRANSFORMER_AMOUNT,
@@ -582,14 +548,7 @@ pub fn initialize_system(
         now() + TIME,
     );
     let now = now() + (TIME * 150_000);
-    lt.call_contract(
-        person,
-        "forward_liquidity",
-        runtime_args! {
-            "pair" => Key::Hash(uniswap_pair_wise.package_hash())
-        },
-        now,
-    );
+    lt.call_contract(person, "forward_liquidity", runtime_args! {}, now);
     session_code_call(
         env,
         owner,
@@ -618,7 +577,7 @@ pub fn initialize_system(
         runtime_args! {
             "entrypoint" => "balance_of",
             "package_hash" => wrapped,
-            "owner" => Key::Hash(uniswap_pair.package_hash())
+            "owner" => Key::Hash(pair_scspr.package_hash())
         },
         now,
     );
@@ -631,7 +590,7 @@ pub fn initialize_system(
         wrapped_balance_after, balance_of_wcspr,
         "wrapped_balance_after & balance_of_wcspr are not equal"
     );
-    (scspr, wcspr, uniswap_router, uniswap_pair, now)
+    (scspr, wcspr, uniswap_router, pair_scspr, now)
 }
 
 #[test]

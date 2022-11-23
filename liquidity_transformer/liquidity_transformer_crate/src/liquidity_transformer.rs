@@ -92,18 +92,20 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
     #[allow(clippy::too_many_arguments)]
     fn init(
         &self,
-        wise_token: Key,
+        wise: Key,
         scspr: Key,
-        uniswap_pair: Key,
+        pair_wise: Key,
+        pair_scspr: Key,
         uniswap_router: Key,
         wcspr: Key,
         package_hash: Key,
         contract_hash: Key,
         purse: URef,
     ) {
-        data::set_wise(wise_token);
+        data::set_wise(wise);
         data::set_scspr(scspr);
-        data::set_uniswap_pair(uniswap_pair);
+        data::set_pair_wise(pair_wise);
+        data::set_pair_scspr(pair_scspr);
         data::set_uniswap_router(uniswap_router);
         data::set_wcspr(wcspr);
         data::set_hash(contract_hash);
@@ -155,11 +157,12 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
 
     // --- FUNCTIONS --- //
 
-    fn set_settings(&self, wise_token: Key, uniswap_pair: Key, synthetic_cspr: Key) {
+    fn set_settings(&self, wise_token: Key, pair_wise: Key, pair_scspr: Key, synthetic_cspr: Key) {
         self.only_keeper();
         data::set_wise(wise_token);
+        data::set_pair_wise(pair_wise);
+        data::set_pair_scspr(pair_scspr);
         data::set_scspr(synthetic_cspr);
-        data::set_uniswap_pair(uniswap_pair);
     }
 
     fn renounce_keeper(&self) {
@@ -373,7 +376,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
         (token_amount, return_amount)
     }
 
-    fn forward_liquidity(&mut self, pair: Key) {
+    fn forward_liquidity(&mut self) {
         self.after_investment_days();
         if data::Globals::instance().get(UNISWAP_SWAPED) {
             runtime::revert(ApiError::from(Error::Swapped));
@@ -396,7 +399,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
             None,
             "form_liquidity",
             runtime_args! {
-                "pair" => data::uniswap_pair()
+                "pair" => data::pair_scspr()
             },
         );
         let () = runtime::call_versioned_contract(
@@ -444,7 +447,7 @@ pub trait LIQUIDITYTRANSFORMER<Storage: ContractStorage>: ContractContext<Storag
                     "amount_b_min" => U256::from(0),
                     "to" => data::zero_address(),
                     "deadline" => U256::from(time + 7_200_000),
-                    "pair" => Some(pair)
+                    "pair" => Some(data::pair_wise())
                 },
             );
 
