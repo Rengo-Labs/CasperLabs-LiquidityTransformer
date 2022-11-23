@@ -502,14 +502,6 @@ pub fn initialize_system(
         },
         now(),
     );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        now(),
-    );
     let lt = deploy_liquidity_transformer(
         env,
         "LIQUIDITY_TRANSFORMER",
@@ -547,7 +539,38 @@ pub fn initialize_system(
         },
         now() + TIME,
     );
+
     let now = now() + (TIME * 150_000);
+
+    uniswap_factory.call_contract(
+        owner,
+        "set_white_list",
+        runtime_args! {
+            "white_list" => Key::Account(owner)
+        },
+        now,
+    );
+    uniswap_factory.call_contract(
+        owner,
+        "create_pair",
+        runtime_args! {
+            "token_a" => Key::Hash(token.package_hash()),
+            "token_b" => Key::Hash(scspr.package_hash()),
+            "pair_hash" => Key::Hash(pair_stakeable.package_hash()),
+        },
+        now,
+    );
+    uniswap_factory.call_contract(
+        owner,
+        "create_pair",
+        runtime_args! {
+            "token_a" => Key::Hash(scspr.package_hash()),
+            "token_b" => Key::Hash(wcspr.package_hash()),
+            "pair_hash" => Key::Hash(pair_scspr.package_hash()),
+        },
+        now,
+    );
+
     lt.call_contract(person, "forward_liquidity", runtime_args! {}, now);
     session_code_call(
         env,
