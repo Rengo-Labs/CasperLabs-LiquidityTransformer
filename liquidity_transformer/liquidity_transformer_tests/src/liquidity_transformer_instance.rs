@@ -697,7 +697,7 @@ pub fn add_liquidity(
         "session-code-lt",
         owner,
         runtime_args! {
-            "entrypoint" => "deposit_no_return",
+            "entrypoint" => "deposit",
             "package_hash" => Key::Hash(wcspr.package_hash()),
             "amount" => U512::from(AMOUNT),
         },

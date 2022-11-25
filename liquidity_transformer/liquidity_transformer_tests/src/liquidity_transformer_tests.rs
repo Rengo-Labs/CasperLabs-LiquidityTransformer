@@ -225,22 +225,7 @@ fn test_reserve_wise_with_token() {
 
 #[test]
 fn test_forward_liquidity() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
         .unwrap_or_default();
@@ -271,22 +256,7 @@ fn test_forward_liquidity() {
 
 #[test]
 fn test_payout_investor_address() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     session_code_call(
         &env,
         owner,
@@ -315,22 +285,7 @@ fn test_payout_investor_address() {
 
 #[test]
 fn test_get_my_tokens() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     session_code_call(
         &env,
         owner,

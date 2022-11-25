@@ -25,8 +25,7 @@ pub const TOKEN_ADDRESS_RUNTIME_ARG: &str = "token_address";
 pub const TOKEN_AMOUNT_RUNTIME_ARG: &str = "token_amount";
 pub const INVESTOR_ADDRESS_RUNTIME_ARG: &str = "investor_address";
 
-pub const DEPOSIT_SCSPR: &str = "deposit";
-pub const DEPOSIT: &str = "deposit_no_return";
+pub const DEPOSIT: &str = "deposit";
 pub const SET_LIQUIDITY_TRANSFOMER: &str = "set_liquidity_transfomer";
 pub const FORM_LIQUIDITY: &str = "form_liquidity";
 pub const FUND_CONTRACT: &str = "fund_contract";
@@ -76,7 +75,7 @@ pub extern "C" fn call() {
         DEPOSIT => {
             let amount: U512 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG);
             let secondary_purse = temp_purse(amount);
-            runtime::call_versioned_contract(
+            let ret: Result<(), u32> = runtime::call_versioned_contract(
                 package_hash.into_hash().unwrap_or_revert().into(),
                 None,
                 DEPOSIT,
@@ -84,7 +83,8 @@ pub extern "C" fn call() {
                     AMOUNT_RUNTIME_ARG => amount,
                     PURSE_RUNTIME_ARG => secondary_purse
                 },
-            )
+            );
+            store(DEPOSIT, ret);
         }
         FUND_CONTRACT => {
             let amount: U512 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG);
@@ -131,19 +131,6 @@ pub extern "C" fn call() {
                     PAIR_RUNTIME_ARG => pair
                 },
             );
-        }
-        DEPOSIT_SCSPR => {
-            let amount: U512 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG);
-            let secondary_purse = temp_purse(amount);
-            runtime::call_versioned_contract(
-                package_hash.into_hash().unwrap_or_revert().into(),
-                None,
-                DEPOSIT_SCSPR,
-                runtime_args! {
-                    MSG_VALUE_RUNTIME_ARG => amount,
-                    SUCCESOR_PURSE_RUNTIME_ARG => secondary_purse
-                },
-            )
         }
         RESERVE_WISE => {
             let amount: U512 = runtime::get_named_arg(AMOUNT_RUNTIME_ARG);
