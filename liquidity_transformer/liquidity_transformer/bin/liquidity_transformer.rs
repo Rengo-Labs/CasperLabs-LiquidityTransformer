@@ -30,9 +30,10 @@ impl LiquidityTransformer {
     #[allow(clippy::too_many_arguments)]
     fn constructor(
         &mut self,
-        wise_token: Key,
+        wise: Key,
         scspr: Key,
-        uniswap_pair: Key,
+        pair_wise: Key,
+        pair_scspr: Key,
         uniswap_router: Key,
         wcspr: Key,
         package_hash: Key,
@@ -41,9 +42,10 @@ impl LiquidityTransformer {
     ) {
         LIQUIDITYTRANSFORMER::init(
             self,
-            wise_token,
+            wise,
             scspr,
-            uniswap_pair,
+            pair_wise,
+            pair_scspr,
             uniswap_router,
             wcspr,
             package_hash,
@@ -55,9 +57,10 @@ impl LiquidityTransformer {
 
 #[no_mangle]
 fn constructor() {
-    let wise_token: Key = runtime::get_named_arg("wise_token");
+    let wise: Key = runtime::get_named_arg("wise");
     let scspr: Key = runtime::get_named_arg("scspr");
-    let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
+    let pair_wise: Key = runtime::get_named_arg("pair_wise");
+    let pair_scspr: Key = runtime::get_named_arg("pair_scspr");
     let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
     let wcspr: Key = runtime::get_named_arg("wcspr");
     let package_hash: ContractPackageHash = runtime::get_named_arg("package_hash");
@@ -65,9 +68,10 @@ fn constructor() {
     let purse: URef = runtime::get_named_arg("purse");
 
     LiquidityTransformer::default().constructor(
-        wise_token,
+        wise,
         scspr,
-        uniswap_pair,
+        pair_wise,
+        pair_scspr,
         uniswap_router,
         wcspr,
         Key::from(package_hash),
@@ -80,10 +84,11 @@ fn constructor() {
 #[no_mangle]
 fn set_settings() {
     let wise_token: Key = runtime::get_named_arg("wise_token");
-    let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
+    let pair_wise: Key = runtime::get_named_arg("pair_wise");
+    let pair_scspr: Key = runtime::get_named_arg("pair_scspr");
     let synthetic_cspr: Key = runtime::get_named_arg("synthetic_cspr");
 
-    LiquidityTransformer::default().set_settings(wise_token, uniswap_pair, synthetic_cspr);
+    LiquidityTransformer::default().set_settings(wise_token, pair_wise, pair_scspr, synthetic_cspr);
 }
 
 /// @notice Use to renounce_keeper and can be only called by keeper
@@ -127,9 +132,7 @@ fn reserve_wise_with_token() {
 /// @dev check add_liquidity documentation
 #[no_mangle]
 fn forward_liquidity() {
-    let pair: Key = runtime::get_named_arg("pair");
-
-    LiquidityTransformer::default().forward_liquidity(pair);
+    LiquidityTransformer::default().forward_liquidity();
 }
 
 /// @notice Allows to mint all the tokens
@@ -207,9 +210,10 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "constructor",
         vec![
-            Parameter::new("wise_token", Key::cl_type()),
+            Parameter::new("wise", Key::cl_type()),
             Parameter::new("scspr", Key::cl_type()),
-            Parameter::new("uniswap_pair", Key::cl_type()),
+            Parameter::new("pair_wise", Key::cl_type()),
+            Parameter::new("pair_scspr", Key::cl_type()),
             Parameter::new("uniswap_router", Key::cl_type()),
             Parameter::new("wcspr", Key::cl_type()),
             Parameter::new("package_hash", ContractPackageHash::cl_type()),
@@ -224,7 +228,8 @@ fn get_entry_points() -> EntryPoints {
         "set_settings",
         vec![
             Parameter::new("wise_token", Key::cl_type()),
-            Parameter::new("uniswap_pair", Key::cl_type()),
+            Parameter::new("pair_wise", Key::cl_type()),
+            Parameter::new("pair_scspr", Key::cl_type()),
             Parameter::new("synthetic_cspr", Key::cl_type()),
         ],
         <()>::cl_type(),
@@ -263,7 +268,7 @@ fn get_entry_points() -> EntryPoints {
     ));
     entry_points.add_entry_point(EntryPoint::new(
         "forward_liquidity",
-        vec![Parameter::new("pair", Key::cl_type())],
+        vec![],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
@@ -345,15 +350,17 @@ pub extern "C" fn call() {
                 .unwrap_or_revert();
         }
 
-        let wise_token: Key = runtime::get_named_arg("wise_token");
+        let wise: Key = runtime::get_named_arg("wise");
         let scspr: Key = runtime::get_named_arg("scspr");
-        let uniswap_pair: Key = runtime::get_named_arg("uniswap_pair");
+        let pair_wise: Key = runtime::get_named_arg("pair_wise");
+        let pair_scspr: Key = runtime::get_named_arg("pair_scspr");
         let uniswap_router: Key = runtime::get_named_arg("uniswap_router");
         let wcspr: Key = runtime::get_named_arg("wcspr");
         let constructor_args = runtime_args! {
-            "wise_token" => wise_token,
+            "wise" => wise,
             "scspr" => scspr,
-            "uniswap_pair" => uniswap_pair,
+            "pair_wise" => pair_wise,
+            "pair_scspr" => pair_scspr,
             "uniswap_router" => uniswap_router,
             "wcspr" => wcspr,
             "package_hash" => package_hash,

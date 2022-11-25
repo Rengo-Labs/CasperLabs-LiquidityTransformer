@@ -1,6 +1,6 @@
 uniswap_core_directory = ../CasperLabs-UniswapV2-core
 uniswap_router_directory = ../Casperlabs-UniswapRouter
-stakeable_token_directory = ../CasperLabs-Wise-StakeableToken
+stakeable_token_directory = ../Casperlabs-Wise-StakeableToken/
 liquidity_transformer_directory = .
 
 # Core Contracts
@@ -13,11 +13,6 @@ wcspr_contract = ${uniswap_core_directory}/wcspr/
 # Router Contracts
 library_contract = ${uniswap_router_directory}/uniswap-v2-library/
 router_contract = ${uniswap_router_directory}/uniswap-v2-router/
-
-# Wise Contracts
-stakeable_token_contract = ${stakeable_token_directory}/stakeabletoken/
-liquidity_guard_contract = ${stakeable_token_directory}/liquidity_guard/
-transfer_helper_contract = ${stakeable_token_directory}/transfer_helper/
 
 wasm_src_path = target/wasm32-unknown-unknown/release/
 wasm_dest_liquidity_transformer_path = ${liquidity_transformer_directory}/liquidity_transformer/liquidity_transformer_tests/wasm/
@@ -42,9 +37,7 @@ build-all:
 	cd ${wcspr_contract} && make build-contract
 	cd ${library_contract} && make build-contract
 	cd ${router_contract} && make build-contract
-	cd ${stakeable_token_contract} && make build-contract
-	cd ${liquidity_guard_contract} && make build-contract
-	cd ${transfer_helper_contract} && make build-contract
+	cd ${stakeable_token_directory} && make build-all
 	cd ${liquidity_transformer_directory} && make build-contract
 
     # Copying wasm files
@@ -60,9 +53,7 @@ copy-wasm-file:
 	cp ${wcspr_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${library_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
-	cp ${stakeable_token_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
-	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
-	cp ${liquidity_guard_contract}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
+	cp ${stakeable_token_directory}${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_liquidity_transformer_path}
     # Scspr
 	cp ${erc20_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
@@ -72,9 +63,7 @@ copy-wasm-file:
 	cp ${wcspr_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${router_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${library_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	cp ${stakeable_token_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	cp ${liquidity_guard_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
-	cp ${transfer_helper_contract}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
+	cp ${stakeable_token_directory}${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 	cp ${liquidity_transformer_directory}/${wasm_src_path}*.wasm ${wasm_dest_scspr_path}
 
 clean:
@@ -93,9 +82,7 @@ clean-all:
 	cd ${wcspr_contract} && make clean
 	cd ${library_contract} && make clean
 	cd ${router_contract} && make clean
-	cd ${stakeable_token_contract} && make clean
-	cd ${liquidity_guard_contract} && make clean
-	cd ${transfer_helper_contract} && make clean
+	cd ${stakeable_token_directory} && make clean
 	cd ${liquidity_transformer_directory} && make clean
 
 test-liquidity-transformer:

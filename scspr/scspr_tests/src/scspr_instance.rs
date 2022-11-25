@@ -108,17 +108,6 @@ impl SCSPRInstance {
         );
     }
 
-    pub fn define_helper(&self, sender: AccountHash, transfer_helper: Key, time: u64) {
-        self.0.call_contract(
-            sender,
-            "define_helper",
-            runtime_args! {
-                "transfer_helper" => transfer_helper
-            },
-            time,
-        );
-    }
-
     pub fn define_token(&self, sender: AccountHash, wise_token: Key, time: u64) {
         self.0.call_contract(
             sender,

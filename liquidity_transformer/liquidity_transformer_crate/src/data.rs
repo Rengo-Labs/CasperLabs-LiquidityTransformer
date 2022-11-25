@@ -7,7 +7,8 @@ use casper_types::{
 use casperlabs_contract_utils::{get_key, key_to_str, set_key, Dict};
 
 pub const WISE_CONTRACT: &str = "wise_contract";
-pub const UNISWAP_PAIR: &str = "uniswap_pair";
+pub const PAIR_WISE: &str = "pair_wise";
+pub const PAIR_SCSPR: &str = "pair_scspr";
 pub const UNISWAP_ROUTER: &str = "uniswap_router";
 pub const UNISWAP_ROUTER_PACKAGE: &str = "uniswap_router_package";
 pub const WCSPR: &str = "wcspr";
@@ -186,12 +187,20 @@ pub fn set_wise(hash: Key) {
     set_key(WISE_CONTRACT, hash);
 }
 
-pub fn uniswap_pair() -> Key {
-    get_key(UNISWAP_PAIR).unwrap_or_else(zero_address)
+pub fn pair_wise() -> Key {
+    get_key(PAIR_WISE).unwrap_or_else(zero_address)
 }
 
-pub fn set_uniswap_pair(hash: Key) {
-    set_key(UNISWAP_PAIR, hash);
+pub fn set_pair_wise(pair: Key) {
+    set_key(PAIR_WISE, pair);
+}
+
+pub fn pair_scspr() -> Key {
+    get_key(PAIR_SCSPR).unwrap_or_else(zero_address)
+}
+
+pub fn set_pair_scspr(pair: Key) {
+    set_key(PAIR_SCSPR, pair);
 }
 
 pub fn settings_keeper() -> Key {
