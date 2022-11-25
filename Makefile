@@ -1,6 +1,6 @@
-uniswap_core_directory = ../CasperLabs-UniswapV2-core
-uniswap_router_directory = ../Casperlabs-UniswapRouter
-stakeable_token_directory = ../Casperlabs-Wise-StakeableToken/
+uniswap_core_directory = ../CasperLabs-UniswapV2-Core
+uniswap_router_directory = ../CasperLabs-UniswapV2-Router
+stakeable_token_directory = ../CasperLabs-StakeableToken/
 liquidity_transformer_directory = .
 
 # Core Contracts

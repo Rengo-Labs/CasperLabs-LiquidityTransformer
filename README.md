@@ -5,9 +5,9 @@ Implementation of `Synthetic CSPR`, `Synthetic Helper`, `Synthetic Token` and `L
 ## NOTE:- Following repositories are required to place with this project also please make sure names of the repositories should be same as in make file
 ## NOTE:- Investment days can be adjusted by changing the constant value 'pub const INVESTMENT_DAYS: u8 = 15;' in the following file (./CasperLabs-Wise-LiquidityTransformer/liquidity_transformer/liquidity_transformer_crate/src/data.rs)
 
-1. [Uniswap core contracts](https://github.com/Scytalelabs-official/CasperLabs-UniswapV2-core)
-2. [Uniswap router contracts](https://github.com/Scytalelabs-official/Casperlabs-UniswapRouter)
-3. [Stakeable token wise contracts](https://github.com/Scytalelabs-official/CasperLabs-Wise-StakeableToken)
+1. [Uniswap core contracts](https://github.com/Rengo-Labs/CasperLabs-UniswapV2-Core)
+2. [Uniswap router contracts](https://github.com/Rengo-Labs/CasperLabs-UniswapV2-Router)
+3. [Stakeable token wise contracts](https://github.com/Rengo-Labs/CasperLabs-StakeableToken)
 
 ## Steps
 
