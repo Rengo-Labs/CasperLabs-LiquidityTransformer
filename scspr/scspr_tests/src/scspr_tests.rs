@@ -546,27 +546,25 @@ pub fn initialize_system(
         owner,
         "set_white_list",
         runtime_args! {
-            "white_list" => Key::Account(owner)
+            "white_list" => Key::Hash(uniswap_router.package_hash())
         },
         now,
     );
-    uniswap_factory.call_contract(
+
+    uniswap_router.call_contract(
         owner,
-        "create_pair",
+        "add_to_whitelist",
         runtime_args! {
-            "token_a" => Key::Hash(token.package_hash()),
-            "token_b" => Key::Hash(scspr.package_hash()),
-            "pair_hash" => Key::Hash(pair_stakeable.package_hash()),
+            "address" => Key::Hash(lt.package_hash()),
         },
         now,
     );
-    uniswap_factory.call_contract(
+
+    uniswap_router.call_contract(
         owner,
-        "create_pair",
+        "add_to_whitelist",
         runtime_args! {
-            "token_a" => Key::Hash(scspr.package_hash()),
-            "token_b" => Key::Hash(wcspr.package_hash()),
-            "pair_hash" => Key::Hash(pair_scspr.package_hash()),
+            "address" => Key::Hash(scspr.package_hash()),
         },
         now,
     );

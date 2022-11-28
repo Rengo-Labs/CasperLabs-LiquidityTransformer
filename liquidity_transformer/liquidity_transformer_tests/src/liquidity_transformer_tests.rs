@@ -161,16 +161,6 @@ fn test_reserve_wise_with_token() {
         &uniswap_factory,
         time,
     );
-    uniswap_factory.call_contract(
-        owner,
-        "create_pair",
-        runtime_args! {
-            "token_a" => Key::Hash(erc20.package_hash()),
-            "token_b" => Key::Hash(wcspr.package_hash()),
-            "pair_hash" => Key::Hash(stable_usd_wcspr_pair.package_hash()),
-        },
-        0,
-    );
     add_liquidity(
         &env,
         owner,

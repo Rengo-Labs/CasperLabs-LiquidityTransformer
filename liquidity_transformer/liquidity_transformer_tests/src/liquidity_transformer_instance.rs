@@ -588,29 +588,36 @@ pub fn deploy() -> (
         owner,
         "set_white_list",
         runtime_args! {
-            "white_list" => Key::Account(owner)
+            "white_list" => Key::Hash(uniswap_router.package_hash())
         },
         time,
     );
-    uniswap_factory.call_contract(
+
+    uniswap_router.call_contract(
         owner,
-        "create_pair",
+        "add_to_whitelist",
         runtime_args! {
-            "token_a" => Key::Hash(stakeable_token.package_hash()),
-            "token_b" => Key::Hash(scspr.package_hash()),
-            "pair_hash" => Key::Hash(pair_stakeable.package_hash()),
+            "address" => Key::Account(owner),
         },
-        0,
+        time,
     );
-    uniswap_factory.call_contract(
+
+    uniswap_router.call_contract(
         owner,
-        "create_pair",
+        "add_to_whitelist",
         runtime_args! {
-            "token_a" => Key::Hash(scspr.package_hash()),
-            "token_b" => Key::Hash(wcspr.package_hash()),
-            "pair_hash" => Key::Hash(pair_scspr.package_hash()),
+            "address" => Key::Hash(liquidity_transformer.package_hash()),
         },
-        0,
+        time,
+    );
+
+    uniswap_router.call_contract(
+        owner,
+        "add_to_whitelist",
+        runtime_args! {
+            "address" => Key::Hash(scspr.package_hash()),
+        },
+        time,
     );
 
     (
