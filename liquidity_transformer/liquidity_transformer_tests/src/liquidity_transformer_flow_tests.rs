@@ -3,22 +3,7 @@ use casper_types::{runtime_args, Key, RuntimeArgs, U256};
 
 #[test]
 fn test_reserve_claim_flow() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
 
     let (user1, user2) = (env.next_user(), env.next_user());
     // Using session code as caller of purse is required for reserving wise (multiple reservations)
@@ -54,15 +39,6 @@ fn test_reserve_claim_flow() {
             "amount" => TWOTHOUSEND_CSPR * 3
         },
         now(),
-    );
-
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        time,
     );
 
     let time = forward_liquidity(&env, &liquidity_transformer, owner, &wise, &scspr, time);
