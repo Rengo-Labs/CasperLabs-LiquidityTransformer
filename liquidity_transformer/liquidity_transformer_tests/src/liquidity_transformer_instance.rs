@@ -538,8 +538,8 @@ pub fn deploy() -> (
         &env,
         owner,
         "pair-2",
-        "stakeable_wcspr_pair".into(),
-        "STWP".into(),
+        "stakeable_scspr_pair".into(),
+        "STS".into(),
         9,
         0.into(),
         &flash_swapper,
@@ -583,6 +583,43 @@ pub fn deploy() -> (
         TRANSFORMER_AMOUNT,
         time,
     );
+
+    uniswap_factory.call_contract(
+        owner,
+        "set_white_list",
+        runtime_args! {
+            "white_list" => Key::Hash(uniswap_router.package_hash())
+        },
+        time,
+    );
+
+    uniswap_router.call_contract(
+        owner,
+        "add_to_whitelist",
+        runtime_args! {
+            "address" => Key::Account(owner),
+        },
+        time,
+    );
+
+    uniswap_router.call_contract(
+        owner,
+        "add_to_whitelist",
+        runtime_args! {
+            "address" => Key::Hash(liquidity_transformer.package_hash()),
+        },
+        time,
+    );
+
+    uniswap_router.call_contract(
+        owner,
+        "add_to_whitelist",
+        runtime_args! {
+            "address" => Key::Hash(scspr.package_hash()),
+        },
+        time,
+    );
+
     (
         env,
         liquidity_transformer,
@@ -667,7 +704,7 @@ pub fn add_liquidity(
         "session-code-lt",
         owner,
         runtime_args! {
-            "entrypoint" => "deposit_no_return",
+            "entrypoint" => "deposit",
             "package_hash" => Key::Hash(wcspr.package_hash()),
             "amount" => U512::from(AMOUNT),
         },

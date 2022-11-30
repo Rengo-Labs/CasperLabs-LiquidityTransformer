@@ -161,14 +161,6 @@ fn test_reserve_wise_with_token() {
         &uniswap_factory,
         time,
     );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        time,
-    );
     add_liquidity(
         &env,
         owner,
@@ -223,22 +215,7 @@ fn test_reserve_wise_with_token() {
 
 #[test]
 fn test_forward_liquidity() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
         .unwrap_or_default();
@@ -257,14 +234,6 @@ fn test_forward_liquidity() {
         },
         now(),
     );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        time,
-    );
     forward_liquidity(&env, &liquidity_transformer, owner, &wise, &scspr, time);
     let uniswap_swaped: bool = liquidity_transformer
         .query_dictionary("globals", "uniswap_swaped".into())
@@ -277,22 +246,7 @@ fn test_forward_liquidity() {
 
 #[test]
 fn test_payout_investor_address() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     session_code_call(
         &env,
         owner,
@@ -303,14 +257,6 @@ fn test_payout_investor_address() {
             "amount" => TWOTHOUSEND_CSPR
         },
         now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        time,
     );
     let time = forward_liquidity(&env, &liquidity_transformer, owner, &wise, &scspr, time);
     session_code_call(
@@ -329,22 +275,7 @@ fn test_payout_investor_address() {
 
 #[test]
 fn test_get_my_tokens() {
-    let (
-        env,
-        liquidity_transformer,
-        owner,
-        _,
-        _,
-        uniswap_router,
-        _,
-        wise,
-        scspr,
-        uniswap_factory,
-        _,
-        _,
-        _,
-        time,
-    ) = deploy();
+    let (env, liquidity_transformer, owner, _, _, _, _, wise, scspr, _, _, _, _, time) = deploy();
     session_code_call(
         &env,
         owner,
@@ -355,14 +286,6 @@ fn test_get_my_tokens() {
             "amount" => TWOTHOUSEND_CSPR
         },
         now(),
-    );
-    uniswap_factory.call_contract(
-        owner,
-        "set_white_list",
-        runtime_args! {
-            "white_list" => Key::Hash(uniswap_router.package_hash())
-        },
-        time,
     );
     let time = forward_liquidity(&env, &liquidity_transformer, owner, &wise, &scspr, time);
     let balance: U256 = wise

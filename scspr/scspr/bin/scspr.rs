@@ -197,17 +197,6 @@ fn create_pair() {
     Scspr::default().create_pair();
 }
 
-/// @dev This function is to mint token against the address that user provided
-/// @param `to` A Key that holds the account address of the user
-/// @param `amount` A U256 that holds the amount for mint
-#[no_mangle]
-fn mint() {
-    let recipient: Key = runtime::get_named_arg("recipient");
-    let amount: U256 = runtime::get_named_arg("amount");
-
-    Scspr::default().mint(recipient, amount)
-}
-
 /// @notice This function is to approve tokens against the address that user provided
 /// @param `spender` A Key that holds the account address of the user
 /// @param `amount` A U256 that holds the amount for approve
@@ -478,16 +467,6 @@ fn get_entry_points() -> EntryPoints {
     entry_points.add_entry_point(EntryPoint::new(
         "create_pair",
         vec![],
-        <()>::cl_type(),
-        EntryPointAccess::Public,
-        EntryPointType::Contract,
-    ));
-    entry_points.add_entry_point(EntryPoint::new(
-        "mint",
-        vec![
-            Parameter::new("recipient", Key::cl_type()),
-            Parameter::new("amount", U256::cl_type()),
-        ],
         <()>::cl_type(),
         EntryPointAccess::Public,
         EntryPointType::Contract,
